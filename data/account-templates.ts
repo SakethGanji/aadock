@@ -1,7 +1,63 @@
 import type { AccountTemplate } from "../types/auth"
 
+// Account templates are now keyed by "parentProfile_environment"
 export const ACCOUNT_TEMPLATES: Record<string, AccountTemplate[]> = {
-  eclipse: [
+  // Eclipse accounts for different environments
+  eclipse_development: [
+    {
+      accountHolderRole: "Primary",
+      accountHolderRoleCode: "PR",
+      accountNumber: "ECL-DEV-1234567890",
+      customerNumber: "ECLDEVUST001",
+      ccid: "ECLDEVCCID001",
+      lineOfBusiness: "Eclipse Retail Banking (Dev)",
+      productType: "Eclipse Dev Checking Account",
+      environment: "development",
+    },
+    {
+      accountHolderRole: "Joint",
+      accountHolderRoleCode: "JT",
+      accountNumber: "ECL-DEV-9876543210",
+      customerNumber: "ECLDEVUST002",
+      ccid: "ECLDEVCCID002",
+      lineOfBusiness: "Eclipse Wealth Management (Dev)",
+      productType: "Eclipse Dev Investment Account",
+      environment: "development",
+    },
+  ],
+  eclipse_staging: [
+    {
+      accountHolderRole: "Primary",
+      accountHolderRoleCode: "PR",
+      accountNumber: "ECL-STG-1234567890",
+      customerNumber: "ECLSTGUST001",
+      ccid: "ECLSTGCCID001",
+      lineOfBusiness: "Eclipse Retail Banking (Staging)",
+      productType: "Eclipse Staging Checking Account",
+      environment: "staging",
+    },
+    {
+      accountHolderRole: "Joint",
+      accountHolderRoleCode: "JT",
+      accountNumber: "ECL-STG-9876543210",
+      customerNumber: "ECLSTGUST002",
+      ccid: "ECLSTGCCID002",
+      lineOfBusiness: "Eclipse Wealth Management (Staging)",
+      productType: "Eclipse Staging Investment Account",
+      environment: "staging",
+    },
+    {
+      accountHolderRole: "Authorized Signer",
+      accountHolderRoleCode: "AS",
+      accountNumber: "ECL-STG-1122334455",
+      customerNumber: "ECLSTGUST003",
+      ccid: "ECLSTGCCID003",
+      lineOfBusiness: "Eclipse Commercial Banking (Staging)",
+      productType: "Eclipse Staging Business Loan",
+      environment: "staging",
+    },
+  ],
+  eclipse_production: [
     {
       accountHolderRole: "Primary",
       accountHolderRoleCode: "PR",
@@ -10,6 +66,7 @@ export const ACCOUNT_TEMPLATES: Record<string, AccountTemplate[]> = {
       ccid: "ECLCCID001",
       lineOfBusiness: "Eclipse Retail Banking",
       productType: "Eclipse Checking Account",
+      environment: "production",
     },
     {
       accountHolderRole: "Joint",
@@ -19,6 +76,7 @@ export const ACCOUNT_TEMPLATES: Record<string, AccountTemplate[]> = {
       ccid: "ECLCCID002",
       lineOfBusiness: "Eclipse Wealth Management",
       productType: "Eclipse Investment Account",
+      environment: "production",
     },
     {
       accountHolderRole: "Authorized Signer",
@@ -28,6 +86,7 @@ export const ACCOUNT_TEMPLATES: Record<string, AccountTemplate[]> = {
       ccid: "ECLCCID003",
       lineOfBusiness: "Eclipse Commercial Banking",
       productType: "Eclipse Business Loan",
+      environment: "production",
     },
     {
       accountHolderRole: "Beneficiary",
@@ -37,6 +96,7 @@ export const ACCOUNT_TEMPLATES: Record<string, AccountTemplate[]> = {
       ccid: "ECLCCID004",
       lineOfBusiness: "Eclipse Private Banking",
       productType: "Eclipse Trust Account",
+      environment: "production",
     },
     {
       accountHolderRole: "Guarantor",
@@ -46,9 +106,90 @@ export const ACCOUNT_TEMPLATES: Record<string, AccountTemplate[]> = {
       ccid: "ECLCCID005",
       lineOfBusiness: "Eclipse Mortgage Services",
       productType: "Eclipse Home Loan",
+      environment: "production",
     },
   ],
-  olympus: [
+  eclipse_local: [
+    {
+      accountHolderRole: "Primary",
+      accountHolderRoleCode: "PR",
+      accountNumber: "ECL-LOCAL-1234567890",
+      customerNumber: "ECLLOCUST001",
+      ccid: "ECLLOCCCID001",
+      lineOfBusiness: "Eclipse Retail Banking (Local)",
+      productType: "Eclipse Local Test Account",
+      environment: "local",
+      testData: true,
+    },
+    {
+      accountHolderRole: "Joint",
+      accountHolderRoleCode: "JT",
+      accountNumber: "ECL-LOCAL-9876543210",
+      customerNumber: "ECLLOCUST002",
+      ccid: "ECLLOCCCID002",
+      lineOfBusiness: "Eclipse Wealth Management (Local)",
+      productType: "Eclipse Local Investment",
+      environment: "local",
+      testData: true,
+    },
+  ],
+
+  // Olympus accounts for different environments
+  olympus_development: [
+    {
+      accountHolderRole: "Primary",
+      accountHolderRoleCode: "PR",
+      accountNumber: "OLY-DEV-2234567890",
+      customerNumber: "OLYDEVUST001",
+      ccid: "OLYDEVCCID001",
+      lineOfBusiness: "Olympus Digital Banking (Dev)",
+      productType: "Olympus Dev Premium Checking",
+      environment: "development",
+    },
+    {
+      accountHolderRole: "Joint",
+      accountHolderRoleCode: "JT",
+      accountNumber: "OLY-DEV-8876543210",
+      customerNumber: "OLYDEVUST002",
+      ccid: "OLYDEVCCID002",
+      lineOfBusiness: "Olympus Asset Management (Dev)",
+      productType: "Olympus Dev Growth Portfolio",
+      environment: "development",
+    },
+  ],
+  olympus_staging: [
+    {
+      accountHolderRole: "Primary",
+      accountHolderRoleCode: "PR",
+      accountNumber: "OLY-STG-2234567890",
+      customerNumber: "OLYSTGUST001",
+      ccid: "OLYSTGCCID001",
+      lineOfBusiness: "Olympus Digital Banking (Staging)",
+      productType: "Olympus Staging Premium Checking",
+      environment: "staging",
+    },
+    {
+      accountHolderRole: "Joint",
+      accountHolderRoleCode: "JT",
+      accountNumber: "OLY-STG-8876543210",
+      customerNumber: "OLYSTGUST002",
+      ccid: "OLYSTGCCID002",
+      lineOfBusiness: "Olympus Asset Management (Staging)",
+      productType: "Olympus Staging Growth Portfolio",
+      environment: "staging",
+    },
+    {
+      accountHolderRole: "Authorized Signer",
+      accountHolderRoleCode: "AS",
+      accountNumber: "OLY-STG-2122334455",
+      customerNumber: "OLYSTGUST003",
+      ccid: "OLYSTGCCID003",
+      lineOfBusiness: "Olympus Corporate Banking (Staging)",
+      productType: "Olympus Staging Credit Line",
+      environment: "staging",
+    },
+  ],
+  olympus_production: [
     {
       accountHolderRole: "Primary",
       accountHolderRoleCode: "PR",
@@ -57,6 +198,7 @@ export const ACCOUNT_TEMPLATES: Record<string, AccountTemplate[]> = {
       ccid: "OLYCCID001",
       lineOfBusiness: "Olympus Digital Banking",
       productType: "Olympus Premium Checking",
+      environment: "production",
     },
     {
       accountHolderRole: "Joint",
@@ -66,6 +208,7 @@ export const ACCOUNT_TEMPLATES: Record<string, AccountTemplate[]> = {
       ccid: "OLYCCID002",
       lineOfBusiness: "Olympus Asset Management",
       productType: "Olympus Growth Portfolio",
+      environment: "production",
     },
     {
       accountHolderRole: "Authorized Signer",
@@ -75,6 +218,7 @@ export const ACCOUNT_TEMPLATES: Record<string, AccountTemplate[]> = {
       ccid: "OLYCCID003",
       lineOfBusiness: "Olympus Corporate Banking",
       productType: "Olympus Corporate Credit Line",
+      environment: "production",
     },
     {
       accountHolderRole: "Beneficiary",
@@ -84,6 +228,7 @@ export const ACCOUNT_TEMPLATES: Record<string, AccountTemplate[]> = {
       ccid: "OLYCCID004",
       lineOfBusiness: "Olympus Wealth Advisory",
       productType: "Olympus Estate Planning",
+      environment: "production",
     },
     {
       accountHolderRole: "Guarantor",
@@ -93,9 +238,90 @@ export const ACCOUNT_TEMPLATES: Record<string, AccountTemplate[]> = {
       ccid: "OLYCCID005",
       lineOfBusiness: "Olympus Real Estate Finance",
       productType: "Olympus Commercial Property Loan",
+      environment: "production",
     },
   ],
-  sawgrass: [
+  olympus_local: [
+    {
+      accountHolderRole: "Primary",
+      accountHolderRoleCode: "PR",
+      accountNumber: "OLY-LOCAL-2234567890",
+      customerNumber: "OLYLOCUST001",
+      ccid: "OLYLOCCCID001",
+      lineOfBusiness: "Olympus Digital Banking (Local)",
+      productType: "Olympus Local Test Checking",
+      environment: "local",
+      testData: true,
+    },
+    {
+      accountHolderRole: "Joint",
+      accountHolderRoleCode: "JT",
+      accountNumber: "OLY-LOCAL-8876543210",
+      customerNumber: "OLYLOCUST002",
+      ccid: "OLYLOCCCID002",
+      lineOfBusiness: "Olympus Asset Management (Local)",
+      productType: "Olympus Local Portfolio",
+      environment: "local",
+      testData: true,
+    },
+  ],
+
+  // Sawgrass accounts for different environments
+  sawgrass_development: [
+    {
+      accountHolderRole: "Primary",
+      accountHolderRoleCode: "PR",
+      accountNumber: "SGR-DEV-3234567890",
+      customerNumber: "SGRDEVUST001",
+      ccid: "SGRDEVCCID001",
+      lineOfBusiness: "Sawgrass Elite Banking (Dev)",
+      productType: "Sawgrass Dev Platinum Account",
+      environment: "development",
+    },
+    {
+      accountHolderRole: "Joint",
+      accountHolderRoleCode: "JT",
+      accountNumber: "SGR-DEV-7876543210",
+      customerNumber: "SGRDEVUST002",
+      ccid: "SGRDEVCCID002",
+      lineOfBusiness: "Sawgrass Private Equity (Dev)",
+      productType: "Sawgrass Dev Exclusive Fund",
+      environment: "development",
+    },
+  ],
+  sawgrass_staging: [
+    {
+      accountHolderRole: "Primary",
+      accountHolderRoleCode: "PR",
+      accountNumber: "SGR-STG-3234567890",
+      customerNumber: "SGRSTGUST001",
+      ccid: "SGRSTGCCID001",
+      lineOfBusiness: "Sawgrass Elite Banking (Staging)",
+      productType: "Sawgrass Staging Platinum Account",
+      environment: "staging",
+    },
+    {
+      accountHolderRole: "Joint",
+      accountHolderRoleCode: "JT",
+      accountNumber: "SGR-STG-7876543210",
+      customerNumber: "SGRSTGUST002",
+      ccid: "SGRSTGCCID002",
+      lineOfBusiness: "Sawgrass Private Equity (Staging)",
+      productType: "Sawgrass Staging Exclusive Fund",
+      environment: "staging",
+    },
+    {
+      accountHolderRole: "Authorized Signer",
+      accountHolderRoleCode: "AS",
+      accountNumber: "SGR-STG-3122334455",
+      customerNumber: "SGRSTGUST003",
+      ccid: "SGRSTGCCID003",
+      lineOfBusiness: "Sawgrass Investment Banking (Staging)",
+      productType: "Sawgrass Staging M&A Advisory",
+      environment: "staging",
+    },
+  ],
+  sawgrass_production: [
     {
       accountHolderRole: "Primary",
       accountHolderRoleCode: "PR",
@@ -104,6 +330,7 @@ export const ACCOUNT_TEMPLATES: Record<string, AccountTemplate[]> = {
       ccid: "SGRCCID001",
       lineOfBusiness: "Sawgrass Elite Banking",
       productType: "Sawgrass Platinum Account",
+      environment: "production",
     },
     {
       accountHolderRole: "Joint",
@@ -113,6 +340,7 @@ export const ACCOUNT_TEMPLATES: Record<string, AccountTemplate[]> = {
       ccid: "SGRCCID002",
       lineOfBusiness: "Sawgrass Private Equity",
       productType: "Sawgrass Exclusive Fund",
+      environment: "production",
     },
     {
       accountHolderRole: "Authorized Signer",
@@ -122,6 +350,7 @@ export const ACCOUNT_TEMPLATES: Record<string, AccountTemplate[]> = {
       ccid: "SGRCCID003",
       lineOfBusiness: "Sawgrass Investment Banking",
       productType: "Sawgrass M&A Advisory",
+      environment: "production",
     },
     {
       accountHolderRole: "Beneficiary",
@@ -131,6 +360,7 @@ export const ACCOUNT_TEMPLATES: Record<string, AccountTemplate[]> = {
       ccid: "SGRCCID004",
       lineOfBusiness: "Sawgrass Family Office",
       productType: "Sawgrass Legacy Trust",
+      environment: "production",
     },
     {
       accountHolderRole: "Guarantor",
@@ -140,6 +370,42 @@ export const ACCOUNT_TEMPLATES: Record<string, AccountTemplate[]> = {
       ccid: "SGRCCID005",
       lineOfBusiness: "Sawgrass Luxury Finance",
       productType: "Sawgrass Yacht & Aircraft Financing",
+      environment: "production",
     },
   ],
+  sawgrass_local: [
+    {
+      accountHolderRole: "Primary",
+      accountHolderRoleCode: "PR",
+      accountNumber: "SGR-LOCAL-3234567890",
+      customerNumber: "SGRLOCUST001",
+      ccid: "SGRLOCCCID001",
+      lineOfBusiness: "Sawgrass Elite Banking (Local)",
+      productType: "Sawgrass Local VIP Account",
+      environment: "local",
+      testData: true,
+    },
+    {
+      accountHolderRole: "Joint",
+      accountHolderRoleCode: "JT",
+      accountNumber: "SGR-LOCAL-7876543210",
+      customerNumber: "SGRLOCUST002",
+      ccid: "SGRLOCCCID002",
+      lineOfBusiness: "Sawgrass Private Equity (Local)",
+      productType: "Sawgrass Local Fund",
+      environment: "local",
+      testData: true,
+    },
+  ],
+}
+
+// Helper function to get account template key
+export function getAccountTemplateKey(parentProfile: string, environment: string): string {
+  return `${parentProfile}_${environment}`
+}
+
+// Helper function to get accounts for a specific profile and environment
+export function getAccountTemplates(parentProfile: string, environment: string): AccountTemplate[] {
+  const key = getAccountTemplateKey(parentProfile, environment)
+  return ACCOUNT_TEMPLATES[key] || []
 }

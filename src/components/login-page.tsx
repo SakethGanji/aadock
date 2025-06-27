@@ -8,153 +8,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Switch } from "@/components/ui/switch"
-import { User, Lock, Globe, Eye, EyeOff, Copy, RotateCcw, FileText, Settings, Zap, Code, CreditCard, Check, Search, ChevronDown, ChevronRight, Plus, X, Edit2 } from "lucide-react"
+import { User, Lock, Globe, Eye, EyeOff, Copy, RotateCcw, FileText, Settings, Zap, Code, CreditCard, Check, Search, Plus, X, Edit2, Trash2 } from "lucide-react"
 import type { LoginConfig, ParentProfile, Environment, AccountTemplate } from "src/../types/auth"
 import { CALL_TEMPLATES } from "@/../data/call-templates"
-import { ACCOUNT_TEMPLATES } from "@/../data/account-templates"
-
-// Dynamic form component that can render any nested JSON structure
-interface DynamicFormProps {
-  data: any
-  onChange: (newData: any) => void
-  path: string[]
-  level?: number
-}
-
-function DynamicForm({ data, onChange, path, level = 0 }: DynamicFormProps) {
-  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set())
-
-  const updateValue = (key: string, value: any) => {
-    const newData = { ...data }
-    newData[key] = value
-    onChange(newData)
-  }
-
-  const formatKey = (key: string) => {
-    return key
-      .replace(/([A-Z])/g, ' $1')
-      .replace(/^./, str => str.toUpperCase())
-      .trim()
-  }
-
-  const toggleSection = (key: string) => {
-    const newCollapsed = new Set(collapsedSections)
-    if (newCollapsed.has(key)) {
-      newCollapsed.delete(key)
-    } else {
-      newCollapsed.add(key)
-    }
-    setCollapsedSections(newCollapsed)
-  }
-
-  if (typeof data !== 'object' || data === null || Array.isArray(data)) {
-    return null
-  }
-
-  // Group fields by type
-  const primitiveFields: [string, any][] = []
-  const objectFields: [string, any][] = []
-  const arrayFields: [string, any][] = []
-
-  Object.entries(data).forEach(([key, value]) => {
-    if (Array.isArray(value)) {
-      arrayFields.push([key, value])
-    } else if (typeof value === 'object' && value !== null) {
-      objectFields.push([key, value])
-    } else {
-      primitiveFields.push([key, value])
-    }
-  })
-
-  return (
-    <div className={`space-y-${level === 0 ? '6' : '4'}`}>
-      {/* Render primitive fields - one per row */}
-      {primitiveFields.length > 0 && (
-        <div className="space-y-3">
-          {level === 0 && <h4 className="text-sm font-medium text-gray-900 mb-3">Basic Information</h4>}
-          {primitiveFields.map(([key, value]) => {
-            const isProtected = key === 'callId' || key === 'timestamp' || key === 'event' || key === 'lob'
-            
-            return (
-              <div key={key} className="flex items-center gap-4">
-                <Label htmlFor={`${path.join('.')}.${key}`} className="text-sm font-medium text-gray-700 w-40">
-                  {formatKey(key)}
-                </Label>
-                <div className="flex-1">
-                  {typeof value === 'boolean' ? (
-                    <Switch
-                      id={`${path.join('.')}.${key}`}
-                      checked={value}
-                      onCheckedChange={(checked) => updateValue(key, checked)}
-                      disabled={isProtected}
-                    />
-                  ) : (
-                    <Input
-                      id={`${path.join('.')}.${key}`}
-                      type={typeof value === 'number' ? 'number' : 'text'}
-                      value={value || ''}
-                      onChange={(e) => updateValue(key, 
-                        typeof value === 'number' ? Number(e.target.value) : e.target.value
-                      )}
-                      disabled={isProtected}
-                      className={isProtected ? 'bg-gray-50' : ''}
-                    />
-                  )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      )}
-
-      {/* Render nested objects */}
-      {objectFields.map(([key, value]) => {
-        const isCollapsed = collapsedSections.has(key)
-        
-        return (
-          <div key={key} className={`${level > 0 ? 'ml-4' : ''}`}>
-            <div className="flex items-center mb-3">
-              <div
-                className="flex items-center gap-2 cursor-pointer select-none"
-                onClick={() => toggleSection(key)}
-              >
-                {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                <h4 className="text-sm font-medium text-gray-900">{formatKey(key)}</h4>
-              </div>
-            </div>
-            {!isCollapsed && (
-              <div className="pl-6 border-l-2 border-gray-100">
-                <DynamicForm
-                  data={value}
-                  onChange={(newValue) => updateValue(key, newValue)}
-                  path={[...path, key]}
-                  level={level + 1}
-                />
-              </div>
-            )}
-          </div>
-        )
-      })}
-
-      {/* Render arrays */}
-      {arrayFields.map(([key, value]) => (
-        <div key={key}>
-          <Label className="text-sm font-medium text-gray-900 mb-2 block">
-            {formatKey(key)}
-          </Label>
-          <div className="p-3 bg-gray-50 rounded-md">
-            <pre className="text-xs text-gray-600 whitespace-pre-wrap">
-              {JSON.stringify(value, null, 2)}
-            </pre>
-          </div>
-          <p className="text-xs text-gray-500 mt-1">
-            Arrays can be edited in JSON view
-          </p>
-        </div>
-      ))}
-    </div>
-  )
-}
+import { getAccountTemplates } from "@/../data/account-templates"
+import CodeMirror from '@uiw/react-codemirror'
+import { json } from '@codemirror/lang-json'
 
 // Component for adding new accounts
 interface AddAccountFormProps {
@@ -288,12 +147,10 @@ interface LoginPageProps {
 
 export default function LoginPage({ onLogin }: LoginPageProps) {
   const [showPassword, setShowPassword] = useState(false)
-  const [selectedTemplate, setSelectedTemplate] = useState("start_call_eclipse")
   const [accountSearch, setAccountSearch] = useState("")
   const [showAllAccounts, setShowAllAccounts] = useState(false)
   const [showFieldSelector, setShowFieldSelector] = useState(false)
   const [selectedFields, setSelectedFields] = useState<string[]>([])
-  const [isJsonView, setIsJsonView] = useState(false)
   const [jsonText, setJsonText] = useState("")
   const [jsonError, setJsonError] = useState<string | null>(null)
   const [showAddAccount, setShowAddAccount] = useState(false)
@@ -301,12 +158,15 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   const [hiddenDefaultAccounts, setHiddenDefaultAccounts] = useState<Record<string, Set<number>>>({})
   const [useIframe, setUseIframe] = useState(true)
   const [useWebsocket, setUseWebsocket] = useState(false)
+  const [saveCredentials, setSaveCredentials] = useState(false)
+  const [saveDefaultAccount, setSaveDefaultAccount] = useState(false)
+  const [activeTab, setActiveTab] = useState("config")
   const [config, setConfig] = useState<LoginConfig>({
     username: "",
     password: "",
     parentProfile: "",
     environment: "",
-    startCallParams: CALL_TEMPLATES[0].params,
+    startCallParams: {},
     devMode: false,
     localhostIframeUrl: "http://localhost:3001",
     localhostWebsocketUrl: "ws://localhost:8080",
@@ -315,22 +175,29 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
 
   const selectedProfile = PARENT_PROFILES.find((p) => p.id === config.parentProfile)
   const selectedEnvironment = ENVIRONMENTS.find((e) => e.id === config.environment)
-  const currentTemplate = CALL_TEMPLATES.find((t) => t.id === selectedTemplate)
 
   // Automatically update call parameters when parent profile changes
   useEffect(() => {
     if (config.parentProfile) {
       const template = CALL_TEMPLATES.find((t) => t.id === `start_call_${config.parentProfile}`)
       if (template) {
-        setSelectedTemplate(template.id)
+        // Create new params with dynamic fields
+        const newParams = {
+          ...template.params,
+          callDetailsAO: {
+            ...template.params.callDetailsAO,
+            Ucid: `${Date.now()}00000000000`,
+            convertedUcid: `${config.parentProfile.toUpperCase()}${Date.now()}`
+          }
+        }
+        
+        // Clear selected accounts when changing parent profile since they're profile-specific
         setConfig(prev => ({
           ...prev,
-          startCallParams: {
-            ...template.params,
-            callId: `call_${Date.now()}`,
-            timestamp: new Date().toISOString(),
-          },
+          startCallParams: newParams,
+          selectedAccounts: [] // Clear accounts when changing profile
         }))
+        setJsonText(JSON.stringify(newParams, null, 2))
       }
     }
     // Reset selected fields when changing LOB
@@ -338,29 +205,113 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
     setShowFieldSelector(false)
   }, [config.parentProfile])
 
+  // Handle account template changes when parent profile or environment changes
+  useEffect(() => {
+    if (config.parentProfile && config.environment) {
+      // Reset custom accounts when changing profile/environment combination
+      const key = `${config.parentProfile}_${config.environment}`
+      if (!customAccounts[key]) {
+        setCustomAccounts(prev => ({ ...prev, [key]: [] }))
+      }
+      if (!hiddenDefaultAccounts[key]) {
+        setHiddenDefaultAccounts(prev => ({ ...prev, [key]: new Set() }))
+      }
+    }
+  }, [config.parentProfile, config.environment])
+
+  // Load saved credentials when environment changes
+  useEffect(() => {
+    if (config.environment) {
+      const savedData = localStorage.getItem(`aa-credentials-${config.environment}`)
+      if (savedData) {
+        try {
+          const parsed = JSON.parse(savedData)
+          setConfig(prev => ({
+            ...prev,
+            username: parsed.username || "",
+            password: parsed.password || ""
+          }))
+          setSaveCredentials(true)
+        } catch (error) {
+          console.error("Failed to parse saved credentials", error)
+        }
+      } else {
+        // Clear credentials when switching to an environment with no saved data
+        setConfig(prev => ({
+          ...prev,
+          username: "",
+          password: ""
+        }))
+        setSaveCredentials(false)
+      }
+    }
+  }, [config.environment])
+
+  // Load default account when profile and environment change
+  useEffect(() => {
+    if (config.parentProfile && config.environment) {
+      const savedDefaultAccount = localStorage.getItem(`aa-default-account-${config.parentProfile}-${config.environment}`)
+      if (savedDefaultAccount) {
+        try {
+          const account = JSON.parse(savedDefaultAccount)
+          
+          setConfig(prev => {
+            const updatedStartCallParams = { ...prev.startCallParams }
+            
+            // Ensure customerDetailsAO exists
+            if (!updatedStartCallParams.customerDetailsAO) {
+              updatedStartCallParams.customerDetailsAO = {}
+            }
+            
+            // Replace entire customerDetailsAO with account object
+            updatedStartCallParams.customerDetailsAO = { ...account }
+            
+            return {
+              ...prev,
+              selectedAccounts: [account],
+              startCallParams: updatedStartCallParams
+            }
+          })
+          setSaveDefaultAccount(true)
+        } catch (error) {
+          console.error("Failed to parse saved default account", error)
+        }
+      } else {
+        setSaveDefaultAccount(false)
+      }
+    }
+  }, [config.parentProfile, config.environment])
+
 
   const handleParamsChange = (value: string) => {
     try {
       const parsed = JSON.parse(value)
       
-      // Validate required fields based on the template
-      const requiredFields = ['event', 'callId', 'lob', 'agentId']
-      const missingFields = requiredFields.filter(field => !parsed[field])
-      
-      if (missingFields.length > 0) {
-        setJsonError(`Missing required fields: ${missingFields.join(', ')}`)
+      // Validate required fields based on the new structure
+      if (!parsed.eventName) {
+        setJsonError('Missing required field: eventName')
         return
       }
       
       // Validate event type
-      if (parsed.event !== 'START_CALL') {
-        setJsonError('Event must be "START_CALL"')
+      if (parsed.eventName !== 'START_CALL') {
+        setJsonError('eventName must be "START_CALL"')
         return
       }
       
-      // Validate LOB matches selected profile
-      if (config.parentProfile && parsed.lob !== config.parentProfile) {
-        setJsonError(`LOB must match selected profile: ${config.parentProfile}`)
+      // Validate required nested objects
+      if (!parsed.callDetailsAO || typeof parsed.callDetailsAO !== 'object') {
+        setJsonError('Missing or invalid callDetailsAO object')
+        return
+      }
+      
+      if (!parsed.agentDetailsA0 || typeof parsed.agentDetailsA0 !== 'object') {
+        setJsonError('Missing or invalid agentDetailsA0 object')
+        return
+      }
+      
+      if (!parsed.customerDetailsAO || typeof parsed.customerDetailsAO !== 'object') {
+        setJsonError('Missing or invalid customerDetailsAO object')
         return
       }
       
@@ -369,12 +320,69 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
         ...prev,
         startCallParams: parsed,
       }))
+      // Update jsonText to the properly formatted version
+      setJsonText(JSON.stringify(parsed, null, 2))
     } catch (error) {
       if (error instanceof SyntaxError) {
-        setJsonError('Invalid JSON syntax')
+        // Try to provide more specific error message
+        const match = error.message.match(/position (\d+)/)
+        if (match) {
+          const position = parseInt(match[1])
+          const lines = value.substring(0, position).split('\n')
+          const line = lines.length
+          setJsonError(`Invalid JSON syntax at line ${line}`)
+        } else {
+          setJsonError('Invalid JSON syntax - check for trailing commas, missing quotes, or duplicate keys')
+        }
       } else {
         setJsonError('Error parsing JSON')
       }
+    }
+  }
+
+  // Check if customerDetailsAO has been manually edited
+  const hasCustomerDetailsBeenEdited = () => {
+    if (!config.selectedAccounts || config.selectedAccounts.length === 0) return false
+    
+    const selectedAccount = config.selectedAccounts[0]
+    const customerDetails = config.startCallParams?.customerDetailsAO || {}
+    
+    // Check if customerDetailsAO differs from selected account
+    // Compare all fields from the account
+    const accountKeys = Object.keys(selectedAccount)
+    const customerKeys = Object.keys(customerDetails)
+    
+    // Different number of keys means it's been edited
+    if (accountKeys.length !== customerKeys.length) {
+      return true
+    }
+    
+    // Check each field value
+    for (const key of accountKeys) {
+      if (customerDetails[key] !== selectedAccount[key]) {
+        return true
+      }
+    }
+    
+    return false
+  }
+
+  const validateJsonSyntax = (value: string) => {
+    try {
+      JSON.parse(value)
+      return null
+    } catch (error) {
+      if (error instanceof SyntaxError) {
+        const match = error.message.match(/position (\d+)/)
+        if (match) {
+          const position = parseInt(match[1])
+          const lines = value.substring(0, position).split('\n')
+          const line = lines.length
+          return `Invalid JSON syntax at line ${line}`
+        }
+        return 'Invalid JSON syntax - check for trailing commas, missing quotes, or duplicate keys'
+      }
+      return 'Error parsing JSON'
     }
   }
 
@@ -383,11 +391,46 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   }
 
   const handleLogin = () => {
+    // Save credentials if checkbox is checked
+    if (saveCredentials && config.environment) {
+      const dataToSave = {
+        username: config.username,
+        password: config.password
+      }
+      localStorage.setItem(`aa-credentials-${config.environment}`, JSON.stringify(dataToSave))
+    } else if (!saveCredentials && config.environment) {
+      // Remove saved credentials if checkbox is unchecked
+      localStorage.removeItem(`aa-credentials-${config.environment}`)
+    }
+    
+    // Save default account if checkbox is checked
+    if (saveDefaultAccount && config.parentProfile && config.environment && config.selectedAccounts.length > 0) {
+      localStorage.setItem(
+        `aa-default-account-${config.parentProfile}-${config.environment}`, 
+        JSON.stringify(config.selectedAccounts[0])
+      )
+    } else if (!saveDefaultAccount && config.parentProfile && config.environment) {
+      // Remove saved default account if checkbox is unchecked
+      localStorage.removeItem(`aa-default-account-${config.parentProfile}-${config.environment}`)
+    }
+    
     onLogin(config)
   }
 
+  const handleResetCredentials = () => {
+    if (config.environment) {
+      localStorage.removeItem(`aa-credentials-${config.environment}`)
+      setConfig(prev => ({
+        ...prev,
+        username: "",
+        password: ""
+      }))
+      setSaveCredentials(false)
+    }
+  }
+
   const isFormValid = () => {
-    const baseValid = config.username && config.password && config.parentProfile && config.environment && config.startCallParams
+    const baseValid = config.username && config.password && config.parentProfile && config.environment && config.startCallParams && config.selectedAccounts.length > 0
     
     // If dev mode is enabled, at least one connection method must be selected
     if (config.devMode) {
@@ -406,12 +449,80 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
             <p className="text-sm text-gray-600">Configure your testing environment</p>
           </CardHeader>
 
-          <CardContent>
-            <Tabs defaultValue="config" className="space-y-6">
+          <CardContent className="space-y-6">
+            {/* Parent Profile & Environment Selection - Top Level */}
+            <div className="pb-6 border-b border-gray-200">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Parent Profile</Label>
+                  <Select
+                    value={config.parentProfile}
+                    onValueChange={(value) =>
+                      setConfig({
+                        ...config,
+                        parentProfile: value,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a parent profile" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PARENT_PROFILES.map((profile) => (
+                        <SelectItem key={profile.id} value={profile.id}>
+                          <div className="flex items-center gap-2">
+                            <div className={`w-2 h-2 rounded-full ${profile.color}`} />
+                            {profile.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Environment</Label>
+                  <Select
+                    value={config.environment}
+                    onValueChange={(value) =>
+                      setConfig({
+                        ...config,
+                        environment: value,
+                      })
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select an environment" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ENVIRONMENTS.map((env) => (
+                        <SelectItem key={env.id} value={env.id}>
+                          {env.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedEnvironment && (
+                    <p className="text-xs text-gray-500">{selectedEnvironment.url}</p>
+                  )}
+                </div>
+              </div>
+              
+              {config.parentProfile && config.environment && (
+                <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                  <div className="text-sm text-blue-800 flex items-center gap-2">
+                    <div className={`w-2 h-2 rounded-full ${selectedProfile?.color || 'bg-gray-500'}`} />
+                    {selectedProfile?.name} - {selectedEnvironment?.name}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
               <TabsList className="grid w-full grid-cols-3">
                 <TabsTrigger value="config" className="flex items-center gap-2">
                   <Settings className="w-4 h-4" />
-                  Configuration
+                  Authentication
                 </TabsTrigger>
                 <TabsTrigger value="parameters" className="flex items-center gap-2">
                   <FileText className="w-4 h-4" />
@@ -425,6 +536,54 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
 
               {/* Configuration Tab */}
               <TabsContent value="config" className="space-y-6">
+                {/* Selected Account Display */}
+                {config.selectedAccounts && config.selectedAccounts.length > 0 && config.parentProfile && config.environment && (
+                  <div className="border border-blue-200 rounded-lg overflow-hidden">
+                    <div className="bg-blue-50 px-4 py-2 border-b border-blue-200">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <CreditCard className="w-4 h-4 text-blue-600" />
+                          <p className="text-sm font-medium text-blue-800">
+                            Selected Account
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setActiveTab("accounts")}
+                          className="text-blue-600 hover:text-blue-700 text-xs"
+                        >
+                          Change Account
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="bg-white p-4">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                        {Object.entries(config.selectedAccounts[0]).slice(0, 6).map(([key, value]) => {
+                          const formattedKey = key
+                            .replace(/([A-Z])/g, ' $1')
+                            .replace(/^./, str => str.toUpperCase())
+                            .trim()
+                          
+                          return (
+                            <div key={key} className="space-y-1">
+                              <p className="text-xs text-gray-500">{formattedKey}</p>
+                              <p className="text-sm font-medium text-gray-900 truncate" title={String(value)}>
+                                {typeof value === 'object' ? JSON.stringify(value) : String(value) || '-'}
+                              </p>
+                            </div>
+                          )
+                        })}
+                      </div>
+                      {Object.keys(config.selectedAccounts[0]).length > 6 && (
+                        <p className="text-xs text-gray-500 mt-3 text-center">
+                          +{Object.keys(config.selectedAccounts[0]).length - 6} more fields
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+                
                 {/* Authentication Section */}
                 <div className="border border-gray-200 rounded-lg p-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -470,64 +629,28 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                       </div>
                     </div>
                   </div>
-                </div>
-
-                {/* Profile & Environment Section */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <div className="space-y-2">
-                      <Label className="text-sm">Parent Profile</Label>
-                      <Select
-                      value={config.parentProfile}
-                      onValueChange={(value) =>
-                        setConfig({
-                          ...config,
-                          parentProfile: value,
-                        })
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select a parent profile" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PARENT_PROFILES.map((profile) => (
-                          <SelectItem key={profile.id} value={profile.id}>
-                            <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${profile.color}`} />
-                              {profile.name}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className="space-y-2">
-                      <Label className="text-sm">Select Environment</Label>
-                      <Select
-                        value={config.environment}
-                        onValueChange={(value) =>
-                          setConfig({
-                            ...config,
-                            environment: value,
-                          })
-                        }
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select an environment" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ENVIRONMENTS.map((env) => (
-                            <SelectItem key={env.id} value={env.id}>
-                              {env.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {selectedEnvironment && (
-                        <p className="text-xs text-gray-500 mt-1">{selectedEnvironment.url}</p>
+                  
+                  <div className="mt-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={saveCredentials}
+                          onChange={(e) => setSaveCredentials(e.target.checked)}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm text-gray-700">Save credentials for this environment</span>
+                      </label>
+                      {saveCredentials && config.environment && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleResetCredentials}
+                          className="text-red-600 hover:text-red-700"
+                        >
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Reset
+                        </Button>
                       )}
                     </div>
                   </div>
@@ -657,29 +780,6 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                       <p className="text-sm text-gray-500 mt-1">START_CALL event configuration</p>
                     </div>
                     <div className="flex gap-2">
-                      <div className="flex items-center gap-2 mr-2">
-                        <Button
-                          variant={!isJsonView ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => {
-                            setIsJsonView(false)
-                            setJsonError(null)
-                          }}
-                        >
-                          Simple
-                        </Button>
-                        <Button
-                          variant={isJsonView ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => {
-                            setIsJsonView(true)
-                            setJsonText(JSON.stringify(config.startCallParams, null, 2))
-                            setJsonError(null)
-                          }}
-                        >
-                          JSON
-                        </Button>
-                      </div>
                       <Button variant="outline" size="sm" onClick={copyToClipboard} title="Copy JSON">
                         <Copy className="w-4 h-4" />
                       </Button>
@@ -690,19 +790,29 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                           if (config.parentProfile) {
                             const template = CALL_TEMPLATES.find((t) => t.id === `start_call_${config.parentProfile}`)
                             if (template) {
+                              // Reset to template but preserve account fields if an account is selected
+                              let resetParams = {
+                                ...template.params,
+                                callDetailsAO: {
+                                  ...template.params.callDetailsAO,
+                                  Ucid: `${Date.now()}00000000000`,
+                                  convertedUcid: `${config.parentProfile.toUpperCase()}${Date.now()}`
+                                }
+                              }
+                              
+                              // If an account is selected, merge its fields into customerDetailsAO
+                              if (config.selectedAccounts.length > 0) {
+                                const account = config.selectedAccounts[0]
+                                
+                                // Replace entire customerDetailsAO with account object
+                                resetParams.customerDetailsAO = { ...account }
+                              }
+                              
                               setConfig(prev => ({
                                 ...prev,
-                                startCallParams: {
-                                  ...template.params,
-                                  callId: `call_${Date.now()}`,
-                                  timestamp: new Date().toISOString(),
-                                },
+                                startCallParams: resetParams,
                               }))
-                              setJsonText(JSON.stringify({
-                                ...template.params,
-                                callId: `call_${Date.now()}`,
-                                timestamp: new Date().toISOString(),
-                              }, null, 2))
+                              setJsonText(JSON.stringify(resetParams, null, 2))
                               setJsonError(null)
                             }
                           }
@@ -723,68 +833,157 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                         </span>
                       </div>
 
-                      {isJsonView ? (
-                        <div className="space-y-2">
-                          <Label className="text-sm">START_CALL Parameters (JSON)</Label>
-                          <div className="relative">
-                            <Textarea
-                              value={jsonText || JSON.stringify(config.startCallParams, null, 2)}
-                              onChange={(e) => {
-                                setJsonText(e.target.value)
-                                handleParamsChange(e.target.value)
-                              }}
-                              onBlur={() => {
-                                // Reset jsonText when losing focus to sync with actual state
-                                if (!jsonError) {
-                                  setJsonText(JSON.stringify(config.startCallParams, null, 2))
-                                }
-                              }}
-                              rows={12}
-                              className={`font-mono text-sm border-gray-200 ${
-                                jsonError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'bg-gray-50'
-                              }`}
-                              placeholder="Enter JSON parameters..."
-                            />
-                            {jsonError && (
-                              <div className="absolute -bottom-6 left-0 flex items-center gap-1 text-xs text-red-600">
-                                <span className="inline-block w-2 h-2 bg-red-500 rounded-full"></span>
-                                {jsonError}
-                              </div>
-                            )}
+                      {/* Show account fields info if account is selected */}
+                      {config.selectedAccounts.length > 0 && (
+                        <div className="space-y-2 mb-4">
+                          <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
+                            <p className="text-sm text-blue-800">
+                              Selected account has been copied to customerDetailsAO section
+                            </p>
                           </div>
-                          {!jsonError && jsonText && (
-                            <div className="flex items-center gap-1 text-xs text-green-600">
-                              <Check className="w-3 h-3" />
-                              Valid JSON
+                          {hasCustomerDetailsBeenEdited() && (
+                            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                              <div className="flex items-start justify-between gap-2">
+                                <p className="text-sm text-yellow-800 flex items-start gap-2">
+                                  <span className="text-yellow-600 mt-0.5">⚠️</span>
+                                  <span>
+                                    Warning: customerDetailsAO has been manually edited and no longer matches the selected account. 
+                                    Changes to these fields will be preserved, but may cause inconsistencies.
+                                  </span>
+                                </p>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-xs shrink-0"
+                                  onClick={() => {
+                                    if (config.selectedAccounts.length > 0) {
+                                      const account = config.selectedAccounts[0]
+                                      const updatedStartCallParams = { ...config.startCallParams }
+                                      
+                                      // Replace entire customerDetailsAO with account object
+                                      updatedStartCallParams.customerDetailsAO = { ...account }
+                                      
+                                      setConfig(prev => ({
+                                        ...prev,
+                                        startCallParams: updatedStartCallParams
+                                      }))
+                                      setJsonText(JSON.stringify(updatedStartCallParams, null, 2))
+                                    }
+                                  }}
+                                >
+                                  Resync with Account
+                                </Button>
+                              </div>
                             </div>
                           )}
                         </div>
-                      ) : (
-                        <div className="space-y-4">
-                          <div className="p-4 border border-gray-200 rounded-lg">
-                            <DynamicForm
-                              data={config.startCallParams}
-                              onChange={(newData) => setConfig({
-                                ...config,
-                                startCallParams: newData
-                              })}
-                              path={[]}
+                      )}
+                      
+                      <div className="space-y-2">
+                        <Label className="text-sm">START_CALL Parameters (JSON)</Label>
+                        <div className="relative">
+                          <div className={`border rounded-md overflow-hidden ${
+                            jsonError ? 'border-red-500' : 'border-gray-200'
+                          }`}>
+                            <CodeMirror
+                              value={jsonText || JSON.stringify(config.startCallParams, null, 2)}
+                              height="400px"
+                              theme={undefined} // Use default light theme
+                              extensions={[json()]}
+                              onChange={(value) => {
+                                setJsonText(value)
+                                // Validate syntax in real-time
+                                const syntaxError = validateJsonSyntax(value)
+                                if (syntaxError) {
+                                  setJsonError(syntaxError)
+                                } else {
+                                  setJsonError(null)
+                                }
+                              }}
+                              placeholder="Enter JSON parameters..."
+                              basicSetup={{
+                                lineNumbers: true,
+                                foldGutter: true,
+                                dropCursor: true,
+                                allowMultipleSelections: true,
+                                indentOnInput: true,
+                                bracketMatching: true,
+                                closeBrackets: true,
+                                autocompletion: true,
+                                rectangularSelection: true,
+                                highlightSelectionMatches: true,
+                                searchKeymap: true,
+                              }}
                             />
                           </div>
-
-                          <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-                            <p className="text-xs text-blue-800">
-                              Edit field values in the form above. Use JSON view for advanced editing (arrays, adding/removing fields).
-                            </p>
-                          </div>
+                          {jsonError && (
+                            <div className="absolute -bottom-6 left-0 flex items-center gap-1 text-xs text-red-600">
+                              <span className="inline-block w-2 h-2 bg-red-500 rounded-full"></span>
+                              {jsonError}
+                            </div>
+                          )}
                         </div>
-                      )}
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center gap-3">
+                            {(() => {
+                              try {
+                                const parsed = JSON.parse(jsonText || "{}")
+                                const hasChanges = JSON.stringify(parsed, null, 2) !== JSON.stringify(config.startCallParams, null, 2)
+                                if (!jsonError && jsonText && hasChanges) {
+                                  return (
+                                    <div className="flex items-center gap-1 text-xs text-yellow-600">
+                                      <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full"></span>
+                                      Unsaved changes
+                                    </div>
+                                  )
+                                } else if (!jsonError && jsonText && !hasChanges) {
+                                  return (
+                                    <div className="flex items-center gap-1 text-xs text-green-600">
+                                      <Check className="w-3 h-3" />
+                                      Saved
+                                    </div>
+                                  )
+                                }
+                              } catch {
+                                return null
+                              }
+                            })()}
+                            {hasCustomerDetailsBeenEdited() && (
+                              <div className="flex items-center gap-1 text-xs text-amber-600">
+                                <span>⚠️</span>
+                                <span>Customer details modified</span>
+                              </div>
+                            )}
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={() => {
+                              handleParamsChange(jsonText)
+                            }}
+                            disabled={(() => {
+                              if (!!jsonError || !jsonText) return true
+                              try {
+                                const parsed = JSON.parse(jsonText || "{}")
+                                return JSON.stringify(parsed, null, 2) === JSON.stringify(config.startCallParams, null, 2)
+                              } catch {
+                                return true
+                              }
+                            })()}
+                          >
+                            Save Changes
+                          </Button>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-2">
+                          Edit the JSON structure above. Required fields: eventName, callDetailsAO, agentDetailsA0, customerDetailsAO
+                        </p>
+                      </div>
                     </>
                   ) : (
                     <div className="p-8 text-center border border-gray-200 rounded-lg bg-gray-50">
                       <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                       <p className="text-gray-600">
-                        Please select a LOB in the Configuration tab first
+                        Please select a Parent Profile first
                       </p>
                     </div>
                   )}
@@ -801,7 +1000,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                         Choose one account to use for this session
                       </p>
                     </div>
-                    {config.parentProfile && (
+                    {config.parentProfile && config.environment && (
                       <div className="flex gap-2">
                         <Button
                           variant="outline"
@@ -815,16 +1014,17 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                           variant="outline"
                           size="sm"
                           onClick={() => {
-                            // Reset accounts for current profile
+                            // Reset accounts for current profile+environment
+                            const key = `${config.parentProfile}_${config.environment}`
                             setCustomAccounts({
                               ...customAccounts,
-                              [config.parentProfile]: []
+                              [key]: []
                             })
-                            const hiddenSet = new Set(hiddenDefaultAccounts[config.parentProfile] || [])
+                            const hiddenSet = new Set(hiddenDefaultAccounts[key] || [])
                             hiddenSet.clear()
                             setHiddenDefaultAccounts({
                               ...hiddenDefaultAccounts,
-                              [config.parentProfile]: hiddenSet
+                              [key]: hiddenSet
                             })
                             // Clear selection
                             setConfig({
@@ -840,16 +1040,16 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                     )}
                   </div>
 
-                  {config.parentProfile && (
+                  {config.parentProfile && config.environment && (
                     <div className="p-3 bg-gray-50 border border-gray-200 rounded-md flex items-center gap-2">
                       <div className={`w-2 h-2 rounded-full ${selectedProfile?.color || 'bg-gray-500'}`} />
                       <span className="text-sm font-medium text-gray-700">
-                        {selectedProfile?.name || config.parentProfile} Accounts
+                        {selectedProfile?.name || config.parentProfile} - {selectedEnvironment?.name || config.environment} Accounts
                       </span>
                     </div>
                   )}
 
-                  {config.parentProfile ? (
+                  {config.parentProfile && config.environment ? (
                     <div className="space-y-3">
                       {/* Search and settings bar */}
                       <div className="flex gap-2">
@@ -879,8 +1079,9 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                           <h4 className="text-sm font-medium text-gray-900 mb-3">Add New Account</h4>
                           <AddAccountForm
                             existingFields={(() => {
-                              const defaultAccounts = ACCOUNT_TEMPLATES[config.parentProfile] || []
-                              const userAccounts = customAccounts[config.parentProfile] || []
+                              const key = `${config.parentProfile}_${config.environment}`
+                              const defaultAccounts = getAccountTemplates(config.parentProfile, config.environment)
+                              const userAccounts = customAccounts[key] || []
                               const allAccounts = [...defaultAccounts, ...userAccounts]
                               const allFields = new Set<string>()
                               allAccounts.forEach(account => {
@@ -889,10 +1090,11 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                               return Array.from(allFields).sort()
                             })()}
                             onSave={(newAccount) => {
-                              const profileAccounts = customAccounts[config.parentProfile] || []
+                              const key = `${config.parentProfile}_${config.environment}`
+                              const profileAccounts = customAccounts[key] || []
                               setCustomAccounts({
                                 ...customAccounts,
-                                [config.parentProfile]: [...profileAccounts, newAccount]
+                                [key]: [...profileAccounts, newAccount]
                               })
                               setShowAddAccount(false)
                             }}
@@ -902,10 +1104,11 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                       )}
 
                       {(() => {
-                        const defaultAccounts = ACCOUNT_TEMPLATES[config.parentProfile] || []
-                        const hiddenIndices = hiddenDefaultAccounts[config.parentProfile] || new Set()
+                        const key = `${config.parentProfile}_${config.environment}`
+                        const defaultAccounts = getAccountTemplates(config.parentProfile, config.environment)
+                        const hiddenIndices = hiddenDefaultAccounts[key] || new Set()
                         const visibleDefaultAccounts = defaultAccounts.filter((_, index) => !hiddenIndices.has(index))
-                        const userAccounts = customAccounts[config.parentProfile] || []
+                        const userAccounts = customAccounts[key] || []
                         const allAccounts = [...visibleDefaultAccounts, ...userAccounts]
                         
                         // Get all unique fields from all accounts
@@ -1027,14 +1230,33 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                                           <td 
                                             className="px-3 py-2 cursor-pointer"
                                             onClick={() => {
-                                              const newSelectedAccounts = isSelected
-                                                ? []
-                                                : [account]
-                                              
-                                              setConfig({
-                                                ...config,
-                                                selectedAccounts: newSelectedAccounts,
-                                              })
+                                              if (isSelected) {
+                                                // Deselect account and remove account fields from startCallParams
+                                                setConfig({
+                                                  ...config,
+                                                  selectedAccounts: [],
+                                                })
+                                              } else {
+                                                // Select account and merge its fields into customerDetailsAO
+                                                const updatedStartCallParams = { ...config.startCallParams }
+                                                
+                                                // Ensure customerDetailsAO exists
+                                                if (!updatedStartCallParams.customerDetailsAO) {
+                                                  updatedStartCallParams.customerDetailsAO = {}
+                                                }
+                                                
+                                                // Replace entire customerDetailsAO with account object
+                                                updatedStartCallParams.customerDetailsAO = { ...account }
+                                                
+                                                setConfig({
+                                                  ...config,
+                                                  selectedAccounts: [account],
+                                                  startCallParams: updatedStartCallParams
+                                                })
+                                                
+                                                // Update JSON view
+                                                setJsonText(JSON.stringify(updatedStartCallParams, null, 2))
+                                              }
                                             }}
                                           >
                                             {isSelected && (
@@ -1048,14 +1270,33 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                                               key={field} 
                                               className="px-3 py-2 text-sm text-gray-900 whitespace-nowrap cursor-pointer"
                                               onClick={() => {
-                                                const newSelectedAccounts = isSelected
-                                                  ? []
-                                                  : [account]
-                                                
-                                                setConfig({
-                                                  ...config,
-                                                  selectedAccounts: newSelectedAccounts,
-                                                })
+                                                if (isSelected) {
+                                                  // Deselect account and remove account fields from startCallParams
+                                                  setConfig({
+                                                    ...config,
+                                                    selectedAccounts: [],
+                                                  })
+                                                } else {
+                                                  // Select account and merge its fields into customerDetailsAO
+                                                  const updatedStartCallParams = { ...config.startCallParams }
+                                                  
+                                                  // Ensure customerDetailsAO exists
+                                                  if (!updatedStartCallParams.customerDetailsAO) {
+                                                    updatedStartCallParams.customerDetailsAO = {}
+                                                  }
+                                                  
+                                                  // Replace entire customerDetailsAO with account object
+                                                  updatedStartCallParams.customerDetailsAO = { ...account }
+                                                  
+                                                  setConfig({
+                                                    ...config,
+                                                    selectedAccounts: [account],
+                                                    startCallParams: updatedStartCallParams
+                                                  })
+                                                  
+                                                  // Update JSON view
+                                                  setJsonText(JSON.stringify(updatedStartCallParams, null, 2))
+                                                }
                                               }}
                                             >
                                               {account[field] !== undefined ? (
@@ -1075,11 +1316,11 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                                                 if (isCustomAccount) {
                                                   // Remove custom account
                                                   const accountIndex = index - visibleDefaultAccounts.length
-                                                  const profileAccounts = customAccounts[config.parentProfile] || []
+                                                  const profileAccounts = customAccounts[key] || []
                                                   const newAccounts = profileAccounts.filter((_, i) => i !== accountIndex)
                                                   setCustomAccounts({
                                                     ...customAccounts,
-                                                    [config.parentProfile]: newAccounts
+                                                    [key]: newAccounts
                                                   })
                                                 } else {
                                                   // Hide default account
@@ -1087,11 +1328,11 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                                                     (acc) => JSON.stringify(acc) === JSON.stringify(account)
                                                   )
                                                   if (defaultIndex !== -1) {
-                                                    const hiddenSet = new Set(hiddenDefaultAccounts[config.parentProfile] || [])
+                                                    const hiddenSet = new Set(hiddenDefaultAccounts[key] || [])
                                                     hiddenSet.add(defaultIndex)
                                                     setHiddenDefaultAccounts({
                                                       ...hiddenDefaultAccounts,
-                                                      [config.parentProfile]: hiddenSet
+                                                      [key]: hiddenSet
                                                     })
                                                   }
                                                 }
@@ -1146,16 +1387,35 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                     <div className="p-8 text-center border border-gray-200 rounded-lg bg-gray-50">
                       <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                       <p className="text-gray-600">
-                        Please select a LOB in the Configuration tab first
+                        Please select both Parent Profile and Environment first
                       </p>
                     </div>
                   )}
 
                   {config.selectedAccounts && config.selectedAccounts.length > 0 && (
-                    <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
-                      <p className="text-sm text-green-800 flex items-center gap-2">
-                        <Check className="w-4 h-4" />
-                        Account selected
+                    <div className="mt-4 space-y-2">
+                      <div className="p-3 bg-green-50 border border-green-200 rounded-md">
+                        <p className="text-sm text-green-800 flex items-center gap-2">
+                          <Check className="w-4 h-4" />
+                          Account selected
+                        </p>
+                      </div>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={saveDefaultAccount}
+                          onChange={(e) => setSaveDefaultAccount(e.target.checked)}
+                          className="rounded border-gray-300"
+                        />
+                        <span className="text-sm text-gray-700">Set as default account for {selectedProfile?.name} - {selectedEnvironment?.name}</span>
+                      </label>
+                    </div>
+                  )}
+                  
+                  {(!config.selectedAccounts || config.selectedAccounts.length === 0) && config.parentProfile && config.environment && (
+                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                      <p className="text-sm text-yellow-800">
+                        Please select an account to continue
                       </p>
                     </div>
                   )}
@@ -1169,6 +1429,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                 onClick={handleLogin} 
                 disabled={!isFormValid()} 
                 className="px-6"
+                title={!config.selectedAccounts || config.selectedAccounts.length === 0 ? "Please select an account" : ""}
               >
                 Start Testing
               </Button>
