@@ -4,6 +4,10 @@ export interface LoginConfig {
   parentProfile: string
   environment: string
   startCallParams: Record<string, any>
+  devMode?: boolean
+  localhostIframeUrl?: string
+  localhostWebsocketUrl?: string
+  selectedAccounts?: AccountTemplate[]
 }
 
 export interface ParentProfile {
@@ -24,4 +28,8 @@ export interface CallTemplate {
   name: string
   description: string
   params: Record<string, any>
+}
+
+export interface AccountTemplate {
+  [key: string]: any
 }
