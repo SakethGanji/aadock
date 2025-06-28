@@ -218,37 +218,28 @@ export default function AgentAssistTester({ config, profile, onLogout }: AgentAs
   }, [])
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Agent Assist Tester</h1>
-            <div className="flex items-center gap-4 mt-2">
-              <div className="flex items-center gap-2">
-                <User className="w-4 h-4 text-gray-600" />
-                <span className="text-gray-600">{config.username}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className={`w-3 h-3 rounded-full ${profile.color}`} />
-                <span className="text-gray-600">{profile.name}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Globe className="w-4 h-4 text-gray-600" />
-                <span className="text-gray-600 capitalize">{config.environment}</span>
-              </div>
+    <div className="min-h-screen p-6">
+      <div className="max-w-7xl mx-auto">
+        {/* Status Bar */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4 text-gray-600" />
+              <span className="text-gray-600">{config.username}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className={`w-3 h-3 rounded-full ${profile.color}`} />
+              <span className="text-gray-600">{profile.name}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Globe className="w-4 h-4 text-gray-600" />
+              <span className="text-gray-600 capitalize">{config.environment}</span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant={callActive ? "default" : "secondary"} className="flex items-center gap-1">
-              {callActive ? <Phone className="w-3 h-3" /> : <Square className="w-3 h-3" />}
-              {callActive ? "Call Active" : "Call Inactive"}
-            </Badge>
-            <Button variant="outline" onClick={onLogout}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Logout
-            </Button>
-          </div>
+          <Badge variant={callActive ? "default" : "secondary"} className="flex items-center gap-1">
+            {callActive ? <Phone className="w-3 h-3" /> : <Square className="w-3 h-3" />}
+            {callActive ? "Call Active" : "Call Inactive"}
+          </Badge>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
