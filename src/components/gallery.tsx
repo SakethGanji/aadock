@@ -2,7 +2,7 @@ interface GalleryProps {
   onNavigateToTester: () => void
 }
 
-export default function Gallery({ onNavigateToTester }: GalleryProps) {
+export default function Gallery({ onNavigateToTester: _onNavigateToTester }: GalleryProps) {
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="text-center text-gray-500">

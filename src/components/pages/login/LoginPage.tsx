@@ -202,7 +202,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
     if (config.parentProfile) {
       const template = CALL_TEMPLATES.find((t) => t.id === `start_call_${config.parentProfile}`)
       if (template) {
-        const resetParams = {
+        const resetParams: any = {
           ...template.params,
           callDetailsAO: {
             ...template.params.callDetailsAO,

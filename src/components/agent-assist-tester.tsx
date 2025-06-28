@@ -8,11 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   RefreshCw,
   Send,
-  ChevronDown,
-  ChevronUp,
   Monitor,
   Smartphone,
   Tablet,
@@ -20,19 +19,27 @@ import {
   Play,
   Square,
   Phone,
-  LogOut,
   User,
   Globe,
   Copy,
   RotateCcw,
+  Terminal,
+  Zap,
+  MessageSquare,
+  FileText,
 } from "lucide-react"
-import type { LoginConfig, ParentProfile } from "../types/auth"
+import type { LoginConfig, ParentProfile } from "../../types/auth"
 
 interface LogEntry {
   timestamp: string
   type: "sent" | "received"
   event: string
   payload: any
+}
+
+interface MessageFlowState {
+  userMessage: string
+  agentMessage: string
 }
 
 const PRESET_SIZES = [
@@ -61,14 +68,18 @@ interface AgentAssistTesterProps {
   onLogout: () => void
 }
 
-export default function AgentAssistTester({ config, profile, onLogout }: AgentAssistTesterProps) {
+export default function AgentAssistTester({ config, profile, onLogout: _onLogout }: AgentAssistTesterProps) {
   const [iframeSize, setIframeSize] = useState({ width: 400, height: 650 })
   const [isResizing, setIsResizing] = useState(false)
   const [selectedEvent, setSelectedEvent] = useState<string>("START_CALL")
   const [eventPayload, setEventPayload] = useState<string>(JSON.stringify(config.startCallParams, null, 2))
   const [logs, setLogs] = useState<LogEntry[]>([])
-  const [isLogExpanded, setIsLogExpanded] = useState(false)
   const [callActive, setCallActive] = useState(false)
+  const [messageFlow, setMessageFlow] = useState<MessageFlowState>({
+    userMessage: "",
+    agentMessage: ""
+  })
+  const [activeTab, setActiveTab] = useState("actions")
 
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const resizeRef = useRef<HTMLDivElement>(null)
@@ -218,254 +229,323 @@ export default function AgentAssistTester({ config, profile, onLogout }: AgentAs
   }, [])
 
   return (
-    <div className="min-h-screen p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Status Bar */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
+    <div className="h-screen flex flex-col">
+      {/* Compact Status Bar */}
+      <div className="bg-white border-b px-4 py-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3 sm:gap-6 text-sm">
             <div className="flex items-center gap-2">
-              <User className="w-4 h-4 text-gray-600" />
-              <span className="text-gray-600">{config.username}</span>
+              <User className="w-4 h-4 text-gray-500" />
+              <span className="hidden sm:inline">{config.username}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className={`w-3 h-3 rounded-full ${profile.color}`} />
-              <span className="text-gray-600">{profile.name}</span>
+              <span className="hidden sm:inline">{profile.name}</span>
             </div>
             <div className="flex items-center gap-2">
-              <Globe className="w-4 h-4 text-gray-600" />
-              <span className="text-gray-600 capitalize">{config.environment}</span>
+              <Globe className="w-4 h-4 text-gray-500" />
+              <span className="hidden sm:inline capitalize">{config.environment}</span>
             </div>
           </div>
-          <Badge variant={callActive ? "default" : "secondary"} className="flex items-center gap-1">
-            {callActive ? <Phone className="w-3 h-3" /> : <Square className="w-3 h-3" />}
-            {callActive ? "Call Active" : "Call Inactive"}
+          <Badge variant={callActive ? "default" : "secondary"} className="text-xs p-1 sm:px-2 sm:py-1">
+            {callActive ? (
+              <Phone className="w-3 h-3 sm:mr-1" />
+            ) : (
+              <Square className="w-3 h-3 sm:mr-1" />
+            )}
+            <span className="hidden sm:inline">{callActive ? "Call Active" : "Call Inactive"}</span>
           </Badge>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Controls Panel */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Profile Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <div className={`w-4 h-4 rounded-full ${profile.color}`} />
-                  {profile.name} Profile
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Auto Start:</span>
-                  <span>{profile.defaultBehaviors.autoStartCall ? "Yes" : "No"}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Token Refresh:</span>
-                  <span>{profile.defaultBehaviors.tokenRefreshInterval / 1000}s</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Customer:</span>
-                  <span className="truncate ml-2">{config.startCallParams.customerName || "N/A"}</span>
-                </div>
-              </CardContent>
-            </Card>
+      {/* Main Content */}
+      <div className="flex-1 flex flex-col sm:flex-row gap-4 p-4 overflow-auto sm:overflow-hidden">
+        {/* Left Panel - Controls (minimal width) */}
+        <div className="w-full sm:w-[370px] flex-shrink-0 flex flex-col min-h-[400px] sm:min-h-0">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col">
+            <TabsList className="grid w-full grid-cols-4 gap-1">
+              <TabsTrigger value="actions" className="text-xs flex items-center justify-center gap-1 px-2">
+                <Zap className="w-3 h-3" />
+                <span className="hidden sm:inline">Actions</span>
+              </TabsTrigger>
+              <TabsTrigger value="messages" className="text-xs flex items-center justify-center gap-1 px-2">
+                <MessageSquare className="w-3 h-3" />
+                <span className="hidden sm:inline">Messages</span>
+              </TabsTrigger>
+              <TabsTrigger value="events" className="text-xs flex items-center justify-center gap-1 px-2">
+                <Terminal className="w-3 h-3" />
+                <span className="hidden sm:inline">Events</span>
+              </TabsTrigger>
+              <TabsTrigger value="logs" className="text-xs flex items-center justify-center gap-1 px-2">
+                <FileText className="w-3 h-3" />
+                <span className="hidden sm:inline">Logs ({logs.length})</span>
+              </TabsTrigger>
+            </TabsList>
 
-            {/* Event Controls */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Event Controls</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Select value={selectedEvent} onValueChange={handleEventChange}>
-                  <SelectTrigger>
+            <TabsContent value="actions" className="flex-1 mt-4">
+              <Card className="h-full">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Quick Actions</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={() => {
+                      handleEventChange("START_CALL")
+                      setTimeout(handleSendEvent, 100)
+                    }}
+                  >
+                    <Play className="w-4 h-4 mr-2" />
+                    Start Call
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={() => {
+                      handleEventChange("SEND_TOKEN")
+                      setTimeout(handleSendEvent, 100)
+                    }}
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    Send Token
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={() => {
+                      handleEventChange("END_CALL")
+                      setTimeout(handleSendEvent, 100)
+                    }}
+                  >
+                    <Square className="w-4 h-4 mr-2" />
+                    End Call
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={reloadIframe}
+                  >
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Reload Iframe
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="messages" className="flex-1 mt-4">
+              <Card className="h-full flex flex-col">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Message Flow</CardTitle>
+                </CardHeader>
+                <CardContent className="flex-1 flex flex-col gap-4">
+                  <div className="flex-1 flex flex-col gap-3">
+                    <div className="flex-1 flex flex-col">
+                      <label className="text-xs font-medium mb-2">Customer Message</label>
+                      <Textarea
+                        value={messageFlow.userMessage}
+                        onChange={(e) => setMessageFlow({ ...messageFlow, userMessage: e.target.value })}
+                        placeholder="Type customer message..."
+                        className="h-32 text-sm resize-none"
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full mt-2"
+                        onClick={() => {
+                          if (messageFlow.userMessage) {
+                            sendMessage("CUSTOMER_MESSAGE", { message: messageFlow.userMessage })
+                            setMessageFlow({ ...messageFlow, userMessage: "" })
+                          }
+                        }}
+                      >
+                        <Send className="w-3 h-3 mr-2" />
+                        Send as Customer
+                      </Button>
+                    </div>
+
+                    <div className="flex-1 flex flex-col">
+                      <label className="text-xs font-medium mb-2">Agent Message</label>
+                      <Textarea
+                        value={messageFlow.agentMessage}
+                        onChange={(e) => setMessageFlow({ ...messageFlow, agentMessage: e.target.value })}
+                        placeholder="Type agent message..."
+                        className="h-32 text-sm resize-none"
+                      />
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full mt-2"
+                        onClick={() => {
+                          if (messageFlow.agentMessage) {
+                            sendMessage("AGENT_MESSAGE", { message: messageFlow.agentMessage })
+                            setMessageFlow({ ...messageFlow, agentMessage: "" })
+                          }
+                        }}
+                      >
+                        <Send className="w-3 h-3 mr-2" />
+                        Send as Agent
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="events" className="flex-1 mt-4">
+              <Card className="h-full flex flex-col">
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-sm">Event Controls</CardTitle>
+                </CardHeader>
+                <CardContent className="flex-1 flex flex-col gap-3">
+                  <Select value={selectedEvent} onValueChange={handleEventChange}>
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="START_CALL">START_CALL</SelectItem>
+                      <SelectItem value="SEND_TOKEN">SEND_TOKEN</SelectItem>
+                      <SelectItem value="END_CALL">END_CALL</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <div className="flex-1 flex flex-col">
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-xs font-medium">Payload (JSON)</label>
+                      <div className="flex gap-1">
+                        <Button variant="ghost" size="sm" className="h-6 px-2" onClick={copyPayload}>
+                          <Copy className="w-3 h-3" />
+                        </Button>
+                        <Button variant="ghost" size="sm" className="h-6 px-2" onClick={resetPayload}>
+                          <RotateCcw className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                    <Textarea
+                      value={eventPayload}
+                      onChange={(e) => setEventPayload(e.target.value)}
+                      className="flex-1 font-mono text-xs resize-none"
+                      placeholder="Enter JSON payload..."
+                    />
+                  </div>
+
+                  <Button onClick={handleSendEvent} size="sm" className="w-full">
+                    <Send className="w-3 h-3 mr-2" />
+                    Send Event
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            <TabsContent value="logs" className="flex-1 mt-4">
+              <Card className="h-full flex flex-col">
+                <CardHeader className="pb-3 flex-row items-center justify-between">
+                  <CardTitle className="text-sm">WebSocket Log</CardTitle>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2"
+                    onClick={() => setLogs([])}
+                  >
+                    Clear
+                  </Button>
+                </CardHeader>
+                <CardContent className="flex-1 overflow-hidden">
+                  <div className="h-full overflow-y-auto px-4 pb-4">
+                    {logs.length === 0 ? (
+                      <p className="text-gray-500 text-center py-8 text-sm">No messages logged yet</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {logs.map((log, index) => (
+                          <div key={index} className="p-2 bg-gray-50 rounded text-xs">
+                            <div className="flex items-center gap-2 mb-1">
+                              <Badge variant={log.type === "sent" ? "default" : "secondary"} className="text-xs h-5">
+                                {log.type}
+                              </Badge>
+                              <span className="font-medium">{log.event}</span>
+                              <span className="text-gray-500 ml-auto">{log.timestamp}</span>
+                            </div>
+                            <pre className="mt-1 p-2 bg-white rounded border text-xs overflow-x-auto">
+                              {JSON.stringify(log.payload, null, 2)}
+                            </pre>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+
+        {/* Right Panel - Agent Assist Preview (fills remaining space) */}
+        <div className="w-full sm:flex-1 flex flex-col min-h-[500px] sm:min-h-0">
+          <Card className="flex-1 flex flex-col">
+            <CardHeader className="pb-3 flex-row items-center justify-between">
+              <CardTitle className="text-sm">Agent Assist</CardTitle>
+              <div className="flex items-center gap-2">
+                <Select
+                  value={`${iframeSize.width}x${iframeSize.height}`}
+                  onValueChange={(value) => {
+                    const preset = PRESET_SIZES.find((p) => `${p.width}x${p.height}` === value)
+                    if (preset) {
+                      setIframeSize({ width: preset.width, height: preset.height })
+                    }
+                  }}
+                >
+                  <SelectTrigger className="w-24 h-8 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="START_CALL">START_CALL</SelectItem>
-                    <SelectItem value="SEND_TOKEN">SEND_TOKEN</SelectItem>
-                    <SelectItem value="END_CALL">END_CALL</SelectItem>
+                    {PRESET_SIZES.map((preset) => (
+                      <SelectItem key={preset.name} value={`${preset.width}x${preset.height}`}>
+                        <div className="flex items-center gap-2">
+                          {preset.name === "Mobile" && <Smartphone className="w-3 h-3" />}
+                          {preset.name === "Tablet" && <Tablet className="w-3 h-3" />}
+                          {(preset.name === "Default" || preset.name === "Large") && (
+                            <Monitor className="w-3 h-3" />
+                          )}
+                          <span className="text-xs">{preset.name}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">Payload (JSON)</label>
-                    <div className="flex gap-1">
-                      <Button variant="ghost" size="sm" onClick={copyPayload}>
-                        <Copy className="w-3 h-3" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={resetPayload}>
-                        <RotateCcw className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  </div>
-                  <Textarea
-                    value={eventPayload}
-                    onChange={(e) => setEventPayload(e.target.value)}
-                    rows={12}
-                    className="font-mono text-sm"
-                    placeholder="Enter JSON payload..."
-                  />
-                </div>
-
-                <Button onClick={handleSendEvent} className="w-full">
-                  <Send className="w-4 h-4 mr-2" />
-                  Send Event
+                <Button variant="outline" size="sm" className="h-8 px-2" onClick={reloadIframe}>
+                  <RefreshCw className="w-3 h-3" />
                 </Button>
-              </CardContent>
-            </Card>
-
-            {/* Quick Actions */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Button
-                  variant="outline"
-                  className="w-full justify-start bg-transparent"
-                  onClick={() => {
-                    handleEventChange("START_CALL")
-                    setTimeout(handleSendEvent, 100)
-                  }}
-                >
-                  <Play className="w-4 h-4 mr-2" />
-                  Start Call
-                </Button>
-                <Button
-                  variant="outline"
-                  className="w-full justify-start bg-transparent"
-                  onClick={() => {
-                    handleEventChange("END_CALL")
-                    setTimeout(handleSendEvent, 100)
-                  }}
-                >
-                  <Square className="w-4 h-4 mr-2" />
-                  End Call
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Iframe Preview */}
-          <div className="lg:col-span-2">
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle>Agent Assist Preview</CardTitle>
-                  <div className="flex items-center gap-2">
-                    <Select
-                      value={`${iframeSize.width}x${iframeSize.height}`}
-                      onValueChange={(value) => {
-                        const preset = PRESET_SIZES.find((p) => `${p.width}x${p.height}` === value)
-                        if (preset) {
-                          setIframeSize({ width: preset.width, height: preset.height })
-                        }
-                      }}
-                    >
-                      <SelectTrigger className="w-32">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {PRESET_SIZES.map((preset) => (
-                          <SelectItem key={preset.name} value={`${preset.width}x${preset.height}`}>
-                            <div className="flex items-center gap-2">
-                              {preset.name === "Mobile" && <Smartphone className="w-4 h-4" />}
-                              {preset.name === "Tablet" && <Tablet className="w-4 h-4" />}
-                              {(preset.name === "Default" || preset.name === "Large") && (
-                                <Monitor className="w-4 h-4" />
-                              )}
-                              {preset.name}
-                            </div>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <Button variant="outline" size="sm" onClick={reloadIframe}>
-                      <RefreshCw className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="flex justify-center">
-                  <div
-                    className="relative border-2 border-gray-300 rounded-lg overflow-hidden bg-white shadow-lg"
-                    style={{ width: iframeSize.width, height: iframeSize.height }}
-                  >
-                    <iframe
-                      ref={iframeRef}
-                      src="/placeholder.svg?height=650&width=400&text=Agent+Assist+App"
-                      className="w-full h-full border-0"
-                      title="Agent Assist"
-                    />
-
-                    {/* Resize Handle */}
-                    <div
-                      ref={resizeRef}
-                      className="absolute bottom-0 right-0 w-4 h-4 bg-gray-400 cursor-se-resize hover:bg-gray-500 transition-colors"
-                      onMouseDown={handleMouseDown}
-                    >
-                      <Maximize2 className="w-3 h-3 text-white m-0.5" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 text-center text-sm text-gray-600">
-                  Size: {iframeSize.width} × {iframeSize.height}px
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-
-        {/* Log Console */}
-        <Card>
-          <CardHeader>
-            <div
-              className="flex items-center justify-between cursor-pointer"
-              onClick={() => setIsLogExpanded(!isLogExpanded)}
-            >
-              <CardTitle className="flex items-center gap-2">
-                Message Log ({logs.length})
-                {isLogExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              </CardTitle>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  setLogs([])
-                }}
+              </div>
+            </CardHeader>
+            <CardContent className="flex-1 flex items-center justify-center p-4">
+              <div
+                className="relative border-2 border-gray-300 rounded-lg overflow-hidden bg-white shadow-lg"
+                style={{ width: iframeSize.width, height: iframeSize.height }}
               >
-                Clear
-              </Button>
-            </div>
-          </CardHeader>
-          {isLogExpanded && (
-            <CardContent>
-              <div className="max-h-64 overflow-y-auto space-y-2">
-                {logs.length === 0 ? (
-                  <p className="text-gray-500 text-center py-4">No messages logged yet</p>
-                ) : (
-                  logs.map((log, index) => (
-                    <div key={index} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                      <Badge variant={log.type === "sent" ? "default" : "secondary"}>{log.type}</Badge>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium">{log.event}</span>
-                          <span className="text-xs text-gray-500">{log.timestamp}</span>
-                        </div>
-                        <pre className="text-xs bg-white p-2 rounded border overflow-x-auto">
-                          {JSON.stringify(log.payload, null, 2)}
-                        </pre>
-                      </div>
-                    </div>
-                  ))
-                )}
+                <iframe
+                  ref={iframeRef}
+                  src="/placeholder.svg?height=650&width=400&text=Agent+Assist+App"
+                  className="w-full h-full border-0"
+                  title="Agent Assist"
+                />
+                <div
+                  ref={resizeRef}
+                  className="absolute bottom-0 right-0 w-4 h-4 bg-gray-400 cursor-se-resize hover:bg-gray-500 transition-colors"
+                  onMouseDown={handleMouseDown}
+                >
+                  <Maximize2 className="w-3 h-3 text-white m-0.5" />
+                </div>
+              </div>
+              <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-gray-500">
+                {iframeSize.width} × {iframeSize.height}px
               </div>
             </CardContent>
-          )}
-        </Card>
+          </Card>
+        </div>
       </div>
     </div>
   )

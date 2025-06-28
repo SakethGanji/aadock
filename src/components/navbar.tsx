@@ -18,7 +18,7 @@ export default function Navbar({ activeTab, onTabChange, isLoggedIn, onLogout }:
           <div className="flex items-center justify-between h-16">
             {/* Logo/Title */}
             <div className="flex items-center">
-              <h1 className="text-lg font-semibold">AA Desktop Sim</h1>
+              <h1 className="text-lg font-semibold hidden sm:block">AA Desktop Sim</h1>
             </div>
 
             {/* Navigation Tabs */}
@@ -30,7 +30,7 @@ export default function Navbar({ activeTab, onTabChange, isLoggedIn, onLogout }:
               className="flex items-center gap-2"
             >
               <BookOpen className="w-4 h-4" />
-              Gallery
+              <span className="hidden sm:inline">Gallery</span>
             </Button>
             
             <Button
@@ -40,7 +40,7 @@ export default function Navbar({ activeTab, onTabChange, isLoggedIn, onLogout }:
               className="flex items-center gap-2"
             >
               <TestTube2 className="w-4 h-4" />
-              Tester
+              <span className="hidden sm:inline">Tester</span>
             </Button>
             
             <Button
@@ -50,7 +50,7 @@ export default function Navbar({ activeTab, onTabChange, isLoggedIn, onLogout }:
               className="flex items-center gap-2"
             >
               <Route className="w-4 h-4" />
-              Custom Routes
+              <span className="hidden sm:inline">Custom Routes</span>
             </Button>
           </nav>
 
@@ -63,7 +63,7 @@ export default function Navbar({ activeTab, onTabChange, isLoggedIn, onLogout }:
               className="flex items-center gap-2"
             >
               <LogOut className="w-4 h-4" />
-              Logout
+              <span className="hidden sm:inline">Logout</span>
             </Button>
             )}
           </div>

@@ -4,38 +4,38 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #f0f8ff;
-  --foreground: #374151;
+  --background: #f8f9fa;
+  --foreground: #1f2937;
   --card: #ffffff;
-  --card-foreground: #374151;
+  --card-foreground: #1f2937;
   --popover: #ffffff;
-  --popover-foreground: #374151;
-  --primary: #1e40af;
+  --popover-foreground: #1f2937;
+  --primary: #4169E1;
   --primary-foreground: #ffffff;
-  --secondary: #e0f2fe;
-  --secondary-foreground: #4b5563;
+  --secondary: #e6edff;
+  --secondary-foreground: #1f2937;
   --muted: #f3f4f6;
   --muted-foreground: #6b7280;
-  --accent: #e0f2fe;
-  --accent-foreground: #1e40af;
-  --destructive: #ef4444;
+  --accent: #e6edff;
+  --accent-foreground: #4169E1;
+  --destructive: #dc2626;
   --destructive-foreground: #ffffff;
   --border: #e5e7eb;
   --input: #e5e7eb;
-  --ring: #1e40af;
-  --chart-1: #1e40af;
-  --chart-2: #3b82f6;
-  --chart-3: #2563eb;
-  --chart-4: #1d4ed8;
-  --chart-5: #1e3a8a;
-  --sidebar: #e0f2fe;
-  --sidebar-foreground: #374151;
-  --sidebar-primary: #1e40af;
+  --ring: #4169E1;
+  --chart-1: #4169E1;
+  --chart-2: #5b7fe1;
+  --chart-3: #7693e1;
+  --chart-4: #91a7e1;
+  --chart-5: #2c4bb8;
+  --sidebar: #e6edff;
+  --sidebar-foreground: #1f2937;
+  --sidebar-primary: #4169E1;
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e0f2fe;
-  --sidebar-accent-foreground: #1e40af;
+  --sidebar-accent: #e6edff;
+  --sidebar-accent-foreground: #4169E1;
   --sidebar-border: #e5e7eb;
-  --sidebar-ring: #1e40af;
+  --sidebar-ring: #4169E1;
   --font-sans: DM Sans, sans-serif;
   --font-serif: Lora, serif;
   --font-mono: IBM Plex Mono, monospace;
@@ -51,38 +51,38 @@
 }
 
 .dark {
-  --background: #0f172a;
-  --foreground: #d1d5db;
-  --card: #1e293b;
-  --card-foreground: #d1d5db;
-  --popover: #1e293b;
-  --popover-foreground: #d1d5db;
-  --primary: #1e40af;
-  --primary-foreground: #0f172a;
-  --secondary: #2d3748;
-  --secondary-foreground: #a1a1aa;
-  --muted: #1e293b;
-  --muted-foreground: #6b7280;
-  --accent: #2563eb;
-  --accent-foreground: #ffffff;
+  --background: #0a0d1a;
+  --foreground: #e5e7eb;
+  --card: #1a1f36;
+  --card-foreground: #e5e7eb;
+  --popover: #1a1f36;
+  --popover-foreground: #e5e7eb;
+  --primary: #5b7fe1;
+  --primary-foreground: #ffffff;
+  --secondary: #1e2847;
+  --secondary-foreground: #d1d5db;
+  --muted: #1a1f36;
+  --muted-foreground: #9ca3af;
+  --accent: #2a3969;
+  --accent-foreground: #5b7fe1;
   --destructive: #ef4444;
-  --destructive-foreground: #0f172a;
-  --border: #4b5563;
-  --input: #4b5563;
-  --ring: #1e40af;
-  --chart-1: #1e40af;
-  --chart-2: #3b82f6;
-  --chart-3: #2563eb;
-  --chart-4: #1d4ed8;
-  --chart-5: #1e3a8a;
-  --sidebar: #1e293b;
-  --sidebar-foreground: #d1d5db;
-  --sidebar-primary: #1e40af;
-  --sidebar-primary-foreground: #0f172a;
-  --sidebar-accent: #2563eb;
-  --sidebar-accent-foreground: #ffffff;
-  --sidebar-border: #4b5563;
-  --sidebar-ring: #1e40af;
+  --destructive-foreground: #ffffff;
+  --border: #374151;
+  --input: #374151;
+  --ring: #5b7fe1;
+  --chart-1: #5b7fe1;
+  --chart-2: #7693e1;
+  --chart-3: #91a7e1;
+  --chart-4: #acbde1;
+  --chart-5: #4169E1;
+  --sidebar: #1a1f36;
+  --sidebar-foreground: #e5e7eb;
+  --sidebar-primary: #5b7fe1;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #2a3969;
+  --sidebar-accent-foreground: #5b7fe1;
+  --sidebar-border: #374151;
+  --sidebar-ring: #5b7fe1;
   --font-sans: DM Sans, sans-serif;
   --font-serif: Lora, serif;
   --font-mono: IBM Plex Mono, monospace;
@@ -156,5 +156,42 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  
+  /* Enhanced button transitions */
+  button {
+    @apply transition-all duration-200;
+  }
+  
+  /* Card hover effects */
+  .card {
+    @apply transition-shadow duration-200;
+  }
+  .card:hover {
+    @apply shadow-lg;
+  }
+  
+  /* Smooth color transitions */
+  .badge, .tabs-trigger, .button {
+    @apply transition-colors duration-200;
+  }
+  
+  /* Enhanced focus styles */
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-primary;
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    @apply w-2;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-primary/20 rounded-full;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-primary/40;
   }
 }

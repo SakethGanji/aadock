@@ -63,7 +63,7 @@ export default function App() {
     const selectedProfile = loginConfig ? PARENT_PROFILES.find((p) => p.id === loginConfig.parentProfile) : null
 
     return (
-        <>
+        <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/10">
             <Navbar
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
@@ -95,6 +95,6 @@ export default function App() {
                     <CustomRoutes />
                 )}
             </div>
-        </>
+        </div>
     )
 }

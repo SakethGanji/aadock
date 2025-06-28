@@ -14,6 +14,11 @@ export interface ParentProfile {
   id: string
   name: string
   color: string
+  defaultBehaviors: {
+    autoStartCall: boolean
+    tokenRefreshInterval: number
+    defaultToken: string
+  }
 }
 
 export interface Environment {

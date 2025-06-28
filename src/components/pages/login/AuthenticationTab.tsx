@@ -56,7 +56,7 @@ export const AuthenticationTab = React.memo(function AuthenticationTab({ state, 
                 variant="ghost"
                 size="sm"
                 onClick={() => dispatch({ type: 'SET_UI_STATE', payload: { field: 'activeTab', value: 'accounts' } })}
-                className="text-primary hover:text-primary/80 text-xs">
+                className="text-primary hover:text-primary/80 text-xs"
               >
                 Change Account
               </Button>
