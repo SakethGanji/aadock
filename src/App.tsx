@@ -71,8 +71,8 @@ export default function App() {
                 onLogout={handleLogout}
             />
             
-            {/* Add padding to account for floating navbar */}
-            <div className="pt-20">
+            {/* Main content */}
+            <div>
                 {activeTab === "gallery" && (
                     <Gallery onNavigateToTester={() => setActiveTab("tester")} />
                 )}

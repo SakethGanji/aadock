@@ -12,16 +12,17 @@ interface NavbarProps {
 
 export default function Navbar({ activeTab, onTabChange, isLoggedIn, onLogout }: NavbarProps) {
   return (
-    <div className="fixed top-4 left-4 right-4 z-50">
-      <div className="bg-card rounded-xl shadow-md border border-border px-6 py-3">
-        <div className="flex items-center justify-between">
-          {/* Logo/Title - Empty for now */}
-          <div className="flex items-center">
-            {/* Logo space */}
-          </div>
+    <div className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="border-b">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo/Title */}
+            <div className="flex items-center">
+              <h1 className="text-lg font-semibold">AA Desktop Sim</h1>
+            </div>
 
-          {/* Navigation Tabs */}
-          <nav className="flex items-center space-x-1">
+            {/* Navigation Tabs */}
+            <nav className="flex items-center space-x-1">
             <Button
               variant={activeTab === "gallery" ? "default" : "ghost"}
               size="sm"
@@ -53,8 +54,8 @@ export default function Navbar({ activeTab, onTabChange, isLoggedIn, onLogout }:
             </Button>
           </nav>
 
-          {/* Logout Button */}
-          {isLoggedIn && onLogout && (
+            {/* Logout Button */}
+            {isLoggedIn && onLogout && (
             <Button
               variant="outline"
               size="sm"
@@ -64,7 +65,8 @@ export default function Navbar({ activeTab, onTabChange, isLoggedIn, onLogout }:
               <LogOut className="w-4 h-4" />
               Logout
             </Button>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </div>
