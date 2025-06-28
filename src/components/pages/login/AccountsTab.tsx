@@ -120,8 +120,8 @@ export const AccountsTab = React.memo(function AccountsTab({ state, dispatch }: 
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-base font-medium text-gray-900">Select Account</h3>
-          <p className="text-sm text-gray-500 mt-1">
+          <h3 className="text-base font-medium text-foreground">Select Account</h3>
+          <p className="text-sm text-muted-foreground mt-1">
             Choose one account to use for this session
           </p>
         </div>
@@ -148,9 +148,9 @@ export const AccountsTab = React.memo(function AccountsTab({ state, dispatch }: 
       </div>
 
       {config.parentProfile && config.environment && (
-        <div className="p-3 bg-gray-50 border border-gray-200 rounded-md flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${selectedProfile?.color || 'bg-gray-500'}`} />
-          <span className="text-sm font-medium text-gray-700">
+        <div className="p-3 bg-muted border border-border rounded-md flex items-center gap-2">
+          <div className={`w-2 h-2 rounded-full ${selectedProfile?.color || 'bg-muted-foreground'}`} />
+          <span className="text-sm font-medium text-foreground/80">
             {selectedProfile?.name || config.parentProfile} - {selectedEnvironment?.name || config.environment} Accounts
           </span>
         </div>
@@ -168,7 +168,7 @@ export const AccountsTab = React.memo(function AccountsTab({ state, dispatch }: 
                 onChange={(e) => dispatch({ type: 'SET_UI_STATE', payload: { field: 'accountSearch', value: e.target.value } })}
                 className="pl-8"
               />
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             </div>
             <Button
               variant="outline"
@@ -182,8 +182,8 @@ export const AccountsTab = React.memo(function AccountsTab({ state, dispatch }: 
 
           {/* Add Account Form */}
           {showAddAccount && (
-            <div className="p-4 border border-dashed border-gray-300 rounded-lg">
-              <h4 className="text-sm font-medium text-gray-900 mb-3">Add New Account</h4>
+            <div className="p-4 border border-dashed border-border rounded-lg">
+              <h4 className="text-sm font-medium text-foreground mb-3">Add New Account</h4>
               <AddAccountForm
                 existingFields={accounts.availableFields}
                 onSave={handleAddAccount}
@@ -194,9 +194,9 @@ export const AccountsTab = React.memo(function AccountsTab({ state, dispatch }: 
 
           {/* Field selector panel */}
           {showFieldSelector && (
-            <div className="p-4 border border-gray-200 rounded-lg bg-gray-50 space-y-3">
+            <div className="p-4 border border-border rounded-lg bg-muted space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="text-sm font-medium text-gray-900">Select table columns</h4>
+                <h4 className="text-sm font-medium text-foreground">Select table columns</h4>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -209,7 +209,7 @@ export const AccountsTab = React.memo(function AccountsTab({ state, dispatch }: 
                 {accounts.availableFields.map((field) => (
                   <label
                     key={field}
-                    className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-100 p-1 rounded"
+                    className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted-foreground/10 p-1 rounded"
                   >
                     <Checkbox
                       checked={selectedFields.includes(field)}
@@ -220,27 +220,27 @@ export const AccountsTab = React.memo(function AccountsTab({ state, dispatch }: 
                 ))}
               </div>
               {selectedFields.length === 0 && (
-                <p className="text-xs text-gray-500 italic">Select at least one field to display</p>
+                <p className="text-xs text-muted-foreground italic">Select at least one field to display</p>
               )}
             </div>
           )}
 
           {/* Table view */}
-          <div className="border border-gray-200 rounded-lg overflow-hidden">
+          <div className="border border-border rounded-lg overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className="bg-muted border-b border-border">
                   <tr>
                     <th className="w-10 px-3 py-2"></th>
                     {fieldsToShow.map(field => (
-                      <th key={field} className="px-3 py-2 text-left text-xs font-medium text-gray-700 uppercase tracking-wider whitespace-nowrap">
+                      <th key={field} className="px-3 py-2 text-left text-xs font-medium text-foreground/80 uppercase tracking-wider whitespace-nowrap">
                         {formatKey(field)}
                       </th>
                     ))}
                     <th className="w-10 px-3 py-2"></th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-card divide-y divide-border">
                   {displayAccounts.map((account, index) => {
                     const isSelected = config.selectedAccounts?.some(
                       (a: AccountTemplate) => JSON.stringify(a) === JSON.stringify(account)
@@ -252,8 +252,8 @@ export const AccountsTab = React.memo(function AccountsTab({ state, dispatch }: 
                         key={index}
                         className={`group transition-colors ${
                           isSelected
-                            ? "bg-blue-50 hover:bg-blue-100"
-                            : "hover:bg-gray-50"
+                            ? "bg-accent hover:bg-accent/80"
+                            : "hover:bg-muted"
                         }`}
                       >
                         <td 
@@ -261,7 +261,7 @@ export const AccountsTab = React.memo(function AccountsTab({ state, dispatch }: 
                           onClick={() => handleAccountSelect(isSelected ? null : account)}
                         >
                           {isSelected && (
-                            <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                            <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
                               <Check className="w-3 h-3 text-white" />
                             </div>
                           )}
@@ -269,7 +269,7 @@ export const AccountsTab = React.memo(function AccountsTab({ state, dispatch }: 
                         {fieldsToShow.map(field => (
                           <td 
                             key={field} 
-                            className="px-3 py-2 text-sm text-gray-900 whitespace-nowrap cursor-pointer"
+                            className="px-3 py-2 text-sm text-foreground whitespace-nowrap cursor-pointer"
                             onClick={() => handleAccountSelect(isSelected ? null : account)}
                           >
                             {account[field] !== undefined ? (
@@ -277,7 +277,7 @@ export const AccountsTab = React.memo(function AccountsTab({ state, dispatch }: 
                                 ? JSON.stringify(account[field]) 
                                 : String(account[field])
                             ) : (
-                              <span className="text-gray-400">-</span>
+                              <span className="text-muted-foreground">-</span>
                             )}
                           </td>
                         ))}
@@ -287,7 +287,7 @@ export const AccountsTab = React.memo(function AccountsTab({ state, dispatch }: 
                               e.stopPropagation()
                               handleRemoveAccount(isCustomAccount, index, account, !!isSelected)
                             }}
-                            className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-600"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
                             title={isCustomAccount ? "Delete account" : "Remove account"}
                           >
                             <X className="w-4 h-4" />
@@ -317,15 +317,15 @@ export const AccountsTab = React.memo(function AccountsTab({ state, dispatch }: 
 
           {/* No results message */}
           {filteredAccounts.length === 0 && (
-            <div className="text-center py-4 text-gray-500">
+            <div className="text-center py-4 text-muted-foreground">
               No accounts found matching "{accountSearch}"
             </div>
           )}
         </div>
       ) : (
-        <div className="p-8 text-center border border-gray-200 rounded-lg bg-gray-50">
-          <CreditCard className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-          <p className="text-gray-600">
+        <div className="p-8 text-center border border-border rounded-lg bg-muted">
+          <CreditCard className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">
             Please select both Parent Profile and Environment first
           </p>
         </div>
@@ -333,8 +333,8 @@ export const AccountsTab = React.memo(function AccountsTab({ state, dispatch }: 
 
       {config.selectedAccounts && config.selectedAccounts.length > 0 && (
         <div className="mt-4 space-y-2">
-          <div className="p-3 bg-green-50 border border-green-200 rounded-md">
-            <p className="text-sm text-green-800 flex items-center gap-2">
+          <div className="p-3 bg-green-50/50 border border-green-500/20 rounded-md">
+            <p className="text-sm text-green-700 dark:text-green-500 flex items-center gap-2">
               <Check className="w-4 h-4" />
               Account selected
             </p>
@@ -344,14 +344,14 @@ export const AccountsTab = React.memo(function AccountsTab({ state, dispatch }: 
               checked={saveDefaultAccount}
               onCheckedChange={(checked: boolean) => dispatch({ type: 'SET_UI_STATE', payload: { field: 'saveDefaultAccount', value: checked } })}
             />
-            <span className="text-sm text-gray-700">Set as default account for {selectedProfile?.name} - {selectedEnvironment?.name}</span>
+            <span className="text-sm text-foreground/80">Set as default account for {selectedProfile?.name} - {selectedEnvironment?.name}</span>
           </label>
         </div>
       )}
       
       {(!config.selectedAccounts || config.selectedAccounts.length === 0) && config.parentProfile && config.environment && (
-        <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-          <p className="text-sm text-yellow-800">
+        <div className="mt-4 p-3 bg-yellow-50/50 border border-yellow-500/20 rounded-md">
+          <p className="text-sm text-yellow-700 dark:text-yellow-500">
             Please select an account to continue
           </p>
         </div>

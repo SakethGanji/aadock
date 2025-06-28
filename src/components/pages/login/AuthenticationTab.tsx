@@ -43,12 +43,12 @@ export const AuthenticationTab = React.memo(function AuthenticationTab({ state, 
     <div className="space-y-6">
       {/* Selected Account Display */}
       {config.selectedAccounts && config.selectedAccounts.length > 0 && selectedProfile && selectedEnvironment && (
-        <div className="border border-blue-200 rounded-lg overflow-hidden">
-          <div className="bg-blue-50 px-4 py-2 border-b border-blue-200">
+        <div className="border border-primary/20 rounded-lg overflow-hidden">
+          <div className="bg-primary/10 px-4 py-2 border-b border-primary/20">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-blue-600" />
-                <p className="text-sm font-medium text-blue-800">
+                <CreditCard className="w-4 h-4 text-primary" />
+                <p className="text-sm font-medium text-primary-foreground dark:text-primary">
                   Selected Account
                 </p>
               </div>
@@ -56,13 +56,13 @@ export const AuthenticationTab = React.memo(function AuthenticationTab({ state, 
                 variant="ghost"
                 size="sm"
                 onClick={() => dispatch({ type: 'SET_UI_STATE', payload: { field: 'activeTab', value: 'accounts' } })}
-                className="text-blue-600 hover:text-blue-700 text-xs"
+                className="text-primary hover:text-primary/80 text-xs">
               >
                 Change Account
               </Button>
             </div>
           </div>
-          <div className="bg-white p-4">
+          <div className="bg-card p-4">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {Object.entries(config.selectedAccounts[0]).slice(0, 6).map(([key, value]) => {
                 const formattedKey = key
@@ -72,8 +72,8 @@ export const AuthenticationTab = React.memo(function AuthenticationTab({ state, 
                 
                 return (
                   <div key={key} className="space-y-1">
-                    <p className="text-xs text-gray-500">{formattedKey}</p>
-                    <p className="text-sm font-medium text-gray-900 truncate" title={String(value)}>
+                    <p className="text-xs text-muted-foreground">{formattedKey}</p>
+                    <p className="text-sm font-medium text-foreground truncate" title={String(value)}>
                       {typeof value === 'object' ? JSON.stringify(value) : String(value) || '-'}
                     </p>
                   </div>
@@ -81,7 +81,7 @@ export const AuthenticationTab = React.memo(function AuthenticationTab({ state, 
               })}
             </div>
             {Object.keys(config.selectedAccounts[0]).length > 6 && (
-              <p className="text-xs text-gray-500 mt-3 text-center">
+              <p className="text-xs text-muted-foreground mt-3 text-center">
                 +{Object.keys(config.selectedAccounts[0]).length - 6} more fields
               </p>
             )}
@@ -90,7 +90,7 @@ export const AuthenticationTab = React.memo(function AuthenticationTab({ state, 
       )}
       
       {/* Authentication Section */}
-      <div className="border border-gray-200 rounded-lg p-4">
+      <div className="border border-border rounded-lg p-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label htmlFor="username" className="text-sm">Username</Label>
@@ -120,7 +120,7 @@ export const AuthenticationTab = React.memo(function AuthenticationTab({ state, 
               />
               <button
                 type="button"
-                className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-2.5 text-muted-foreground hover:text-foreground"
                 onClick={() => dispatch({ type: 'SET_UI_STATE', payload: { field: 'showPassword', value: !showPassword } })}
               >
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -138,14 +138,14 @@ export const AuthenticationTab = React.memo(function AuthenticationTab({ state, 
                   dispatch({ type: 'SET_UI_STATE', payload: { field: 'saveCredentials', value: checked } })
                 }
               />
-              <span className="text-sm text-gray-700">Save credentials for this environment</span>
+              <span className="text-sm text-foreground/80">Save credentials for this environment</span>
             </label>
             {saveCredentials && config.environment && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={handleResetCredentials}
-                className="text-red-600 hover:text-red-700"
+                className="text-destructive hover:text-destructive/80"
               >
                 <Trash2 className="w-4 h-4 mr-1" />
                 Reset
@@ -159,8 +159,8 @@ export const AuthenticationTab = React.memo(function AuthenticationTab({ state, 
       <div className="border-t pt-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <Code className="w-4 h-4 text-gray-600" />
-            <h3 className="text-base font-medium text-gray-900">Developer Mode</h3>
+            <Code className="w-4 h-4 text-muted-foreground" />
+            <h3 className="text-base font-medium text-foreground">Developer Mode</h3>
           </div>
           <Switch
             checked={config.devMode}
@@ -172,8 +172,8 @@ export const AuthenticationTab = React.memo(function AuthenticationTab({ state, 
         
         {config.devMode && (
           <div className="space-y-4 animate-in slide-in-from-top-2">
-            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-              <p className="text-sm text-yellow-800">
+            <div className="p-3 bg-yellow-50/50 border border-yellow-500/20 rounded-md">
+              <p className="text-sm text-yellow-700 dark:text-yellow-500">
                 Dev mode enables localhost connections for testing. Select one or both connection methods.
               </p>
             </div>
@@ -198,7 +198,7 @@ export const AuthenticationTab = React.memo(function AuthenticationTab({ state, 
                   </label>
                 </div>
                 {!useIframe && !useWebsocket && (
-                  <p className="text-xs text-red-600">Please select at least one connection method</p>
+                  <p className="text-xs text-destructive">Please select at least one connection method</p>
                 )}
               </div>
               
@@ -215,7 +215,7 @@ export const AuthenticationTab = React.memo(function AuthenticationTab({ state, 
                         dispatch({ type: 'SET_FIELD', payload: { field: 'localhostIframeUrl', value: e.target.value } })
                       }
                     />
-                    <p className="text-xs text-gray-500">URL for iframe-based agent assist</p>
+                    <p className="text-xs text-muted-foreground">URL for iframe-based agent assist</p>
                   </div>
                 )}
                 
@@ -231,7 +231,7 @@ export const AuthenticationTab = React.memo(function AuthenticationTab({ state, 
                         dispatch({ type: 'SET_FIELD', payload: { field: 'localhostWebsocketUrl', value: e.target.value } })
                       }
                     />
-                    <p className="text-xs text-gray-500">WebSocket endpoint for direct communication</p>
+                    <p className="text-xs text-muted-foreground">WebSocket endpoint for direct communication</p>
                   </div>
                 )}
               </div>

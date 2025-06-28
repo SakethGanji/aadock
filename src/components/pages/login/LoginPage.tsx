@@ -231,7 +231,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
       <div className="w-full max-w-6xl">
-        <Card className="shadow-lg border-gray-200">
+        <Card className="border-gray-200 shadow-none">
           <CardContent className="space-y-6">
             {/* Top Section with Profile, Environment, and Start Button */}
             <div className="bg-gray-50 -mx-6 -mt-6 px-6 py-4 border-b rounded-t-lg">
@@ -299,7 +299,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
               {/* Left Column: Account Selection + Authentication */}
               <div className="space-y-6">
                 {/* Account Selection Section */}
-                <Card className="border-gray-200 shadow-sm">
+                <Card className="border-gray-200 shadow-none">
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg flex items-center gap-2">
@@ -359,8 +359,8 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                                     key={index}
                                     className={`group p-3 cursor-pointer transition-colors ${
                                       isSelected
-                                        ? "bg-blue-50 hover:bg-blue-100"
-                                        : "hover:bg-gray-50"
+                                        ? "bg-primary/10 hover:bg-primary/20"
+                                        : "hover:bg-muted"
                                     }`}
                                     onClick={() => handleAccountSelect(isSelected ? null : account)}
                                   >
@@ -368,7 +368,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                                       <div className="flex-1 min-w-0">
                                         <div className="flex items-center gap-2 mb-1">
                                           {isSelected && (
-                                            <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center shrink-0">
+                                            <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center shrink-0">
                                               <Check className="w-2.5 h-2.5 text-white" />
                                             </div>
                                           )}
@@ -436,7 +436,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                 </Card>
 
                 {/* Authentication Section */}
-                <Card className="border-gray-200 shadow-sm">
+                <Card className="border-gray-200 shadow-none">
                   <CardHeader className="pb-4">
                     <CardTitle className="text-lg flex items-center gap-2">
                       <Settings className="w-5 h-5" />
@@ -514,7 +514,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
               </div>
 
               {/* Right Column: Call Parameters */}
-              <Card className="border-gray-200 shadow-sm">
+              <Card className="border-gray-200 shadow-none">
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg flex items-center gap-2">
@@ -544,7 +544,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                       </div>
 
                       {config.selectedAccounts && config.selectedAccounts.length > 0 && (
-                        <div className="p-2 bg-blue-50 border border-blue-200 rounded text-sm text-blue-800">
+                        <div className="p-2 bg-primary/10 border border-primary/30 rounded text-sm text-primary">
                           Account fields copied to customerDetailsAO
                         </div>
                       )}
@@ -616,7 +616,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
 
             {/* Developer Mode Section */}
             <div className="mt-6">
-                <Card className="border-gray-200 shadow-sm">
+                <Card className="border-gray-200 shadow-none">
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg flex items-center gap-2">
@@ -633,8 +633,8 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                   </CardHeader>
                   {config.devMode && (
                     <CardContent className="space-y-4">
-                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
-                        <p className="text-sm text-yellow-800">
+                      <div className="p-3 bg-accent/10 border border-accent/30 rounded-md">
+                        <p className="text-sm text-accent-foreground">
                           Enable localhost connections for development and testing
                         </p>
                       </div>
@@ -690,8 +690,8 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                       </div>
                       
                       {config.devMode && !state.useIframe && !state.useWebsocket && (
-                        <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-                          <p className="text-sm text-red-800">
+                        <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-md">
+                          <p className="text-sm text-destructive-foreground">
                             Please select at least one connection method
                           </p>
                         </div>

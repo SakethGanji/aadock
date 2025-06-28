@@ -14,7 +14,7 @@ const PARENT_PROFILES: ParentProfile[] = [
     {
         id: "sawgrass",
         name: "Sawgrass",
-        color: "bg-blue-500",
+        color: "bg-primary",
         defaultBehaviors: {
             autoStartCall: true,
             tokenRefreshInterval: 30000,
@@ -24,7 +24,7 @@ const PARENT_PROFILES: ParentProfile[] = [
     {
         id: "olympus",
         name: "Olympus",
-        color: "bg-green-500",
+        color: "bg-accent",
         defaultBehaviors: {
             autoStartCall: false,
             tokenRefreshInterval: 60000,
@@ -34,7 +34,7 @@ const PARENT_PROFILES: ParentProfile[] = [
     {
         id: "eclipse",
         name: "Eclipse",
-        color: "bg-purple-500",
+        color: "bg-secondary",
         defaultBehaviors: {
             autoStartCall: true,
             tokenRefreshInterval: 45000,

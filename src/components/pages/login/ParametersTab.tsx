@@ -170,8 +170,8 @@ export const ParametersTab = React.memo(function ParametersTab({ state, dispatch
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-base font-medium text-gray-900">Call Parameters</h3>
-          <p className="text-sm text-gray-500 mt-1">START_CALL event configuration</p>
+          <h3 className="text-base font-medium text-foreground">Call Parameters</h3>
+          <p className="text-sm text-muted-foreground mt-1">START_CALL event configuration</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={copyToClipboard} title="Copy JSON">
@@ -190,9 +190,9 @@ export const ParametersTab = React.memo(function ParametersTab({ state, dispatch
 
       {config.parentProfile ? (
         <>
-          <div className="p-3 bg-gray-50 border border-gray-200 rounded-md flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${selectedProfile?.color || 'bg-gray-500'}`} />
-            <span className="text-sm font-medium text-gray-700">
+          <div className="p-3 bg-muted border border-border rounded-md flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${selectedProfile?.color || 'bg-muted-foreground'}`} />
+            <span className="text-sm font-medium text-foreground/80">
               {selectedProfile?.name || config.parentProfile} START_CALL Template
             </span>
           </div>
@@ -200,16 +200,16 @@ export const ParametersTab = React.memo(function ParametersTab({ state, dispatch
           {/* Show account fields info if account is selected */}
           {config.selectedAccounts && config.selectedAccounts.length > 0 && (
             <div className="space-y-2 mb-4">
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded-md">
-                <p className="text-sm text-blue-800">
+              <div className="p-3 bg-primary/10 border border-primary/20 rounded-md">
+                <p className="text-sm text-primary-foreground dark:text-primary">
                   Selected account has been copied to customerDetailsAO section
                 </p>
               </div>
               {hasCustomerDetailsBeenEdited() && (
-                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                <div className="p-3 bg-yellow-50/50 border border-yellow-500/20 rounded-md">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm text-yellow-800 flex items-start gap-2">
-                      <span className="text-yellow-600 mt-0.5">⚠️</span>
+                    <p className="text-sm text-yellow-700 dark:text-yellow-500 flex items-start gap-2">
+                      <span className="text-yellow-600 dark:text-yellow-500 mt-0.5">⚠️</span>
                       <span>
                         Warning: customerDetailsAO has been manually edited and no longer matches the selected account. 
                         Changes to these fields will be preserved, but may cause inconsistencies.
@@ -233,7 +233,7 @@ export const ParametersTab = React.memo(function ParametersTab({ state, dispatch
             <Label className="text-sm">START_CALL Parameters (JSON)</Label>
             <div className="relative">
               <div className={`border rounded-md overflow-hidden ${
-                jsonError ? 'border-red-500' : 'border-gray-200'
+                jsonError ? 'border-destructive' : 'border-border'
               }`}>
                 <CodeMirror
                   value={jsonText || JSON.stringify(config.startCallParams, null, 2)}
@@ -267,8 +267,8 @@ export const ParametersTab = React.memo(function ParametersTab({ state, dispatch
                 />
               </div>
               {jsonError && (
-                <div className="absolute -bottom-6 left-0 flex items-center gap-1 text-xs text-red-600">
-                  <span className="inline-block w-2 h-2 bg-red-500 rounded-full"></span>
+                <div className="absolute -bottom-6 left-0 flex items-center gap-1 text-xs text-destructive">
+                  <span className="inline-block w-2 h-2 bg-destructive rounded-full"></span>
                   {jsonError}
                 </div>
               )}
@@ -276,19 +276,19 @@ export const ParametersTab = React.memo(function ParametersTab({ state, dispatch
             <div className="flex items-center justify-between mt-2">
               <div className="flex items-center gap-3">
                 {!jsonError && jsonText && hasChanges() && (
-                  <div className="flex items-center gap-1 text-xs text-yellow-600">
-                    <span className="inline-block w-2 h-2 bg-yellow-500 rounded-full"></span>
+                  <div className="flex items-center gap-1 text-xs text-yellow-600 dark:text-yellow-500">
+                    <span className="inline-block w-2 h-2 bg-yellow-500 dark:bg-yellow-400 rounded-full"></span>
                     Unsaved changes
                   </div>
                 )}
                 {!jsonError && jsonText && !hasChanges() && (
-                  <div className="flex items-center gap-1 text-xs text-green-600">
+                  <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-500">
                     <Check className="w-3 h-3" />
                     Saved
                   </div>
                 )}
                 {hasCustomerDetailsBeenEdited() && (
-                  <div className="flex items-center gap-1 text-xs text-amber-600">
+                  <div className="flex items-center gap-1 text-xs text-yellow-600 dark:text-yellow-500">
                     <span>⚠️</span>
                     <span>Customer details modified</span>
                   </div>
@@ -303,15 +303,15 @@ export const ParametersTab = React.memo(function ParametersTab({ state, dispatch
                 Save Changes
               </Button>
             </div>
-            <p className="text-xs text-gray-500 mt-2">
+            <p className="text-xs text-muted-foreground mt-2">
               Edit the JSON structure above. Required fields: eventName, callDetailsAO, agentDetailsA0, customerDetailsAO
             </p>
           </div>
         </>
       ) : (
-        <div className="p-8 text-center border border-gray-200 rounded-lg bg-gray-50">
-          <FileText className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-          <p className="text-gray-600">
+        <div className="p-8 text-center border border-border rounded-lg bg-muted">
+          <FileText className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+          <p className="text-muted-foreground">
             Please select a Parent Profile first
           </p>
         </div>

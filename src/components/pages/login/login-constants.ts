@@ -4,17 +4,17 @@ export const PARENT_PROFILES: ParentProfile[] = [
   {
     id: "eclipse",
     name: "Eclipse",
-    color: "bg-purple-500",
+    color: "bg-secondary",
   },
   {
     id: "olympus",
     name: "Olympus",
-    color: "bg-green-500",
+    color: "bg-accent",
   },
   {
     id: "sawgrass",
     name: "Sawgrass",
-    color: "bg-blue-500",
+    color: "bg-primary",
   },
 ]
 
