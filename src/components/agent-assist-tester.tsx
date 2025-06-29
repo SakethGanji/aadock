@@ -1,6 +1,5 @@
 "use client"
 
-import type React from "react"
 
 import { useState, useRef, useCallback, useEffect } from "react"
 import CodeMirror from '@uiw/react-codemirror'
@@ -887,7 +886,7 @@ export default function AgentAssistTester({ config, profile, onLogout: _onLogout
                 >
                   <iframe
                     ref={iframeRef}
-                    src="/placeholder.svg?height=650&width=400&text=Agent+Assist+App"
+                    src="/mock-child-app.html"
                     className="w-full h-full border-0"
                     title="Agent Assist"
                   />

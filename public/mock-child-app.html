@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mock Agent Assist Child App</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            height: 100vh;
+            box-sizing: border-box;
+            overflow-y: auto;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        h1 {
+            color: #333;
+            margin-top: 0;
+            font-size: 24px;
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+        .status.active {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.inactive {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .message-log {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            max-height: 300px;
+            overflow-y: auto;
+            background-color: #f9f9f9;
+            margin-bottom: 20px;
+        }
+        .message-entry {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+            background-color: white;
+            border: 1px solid #e0e0e0;
+        }
+        .message-type {
+            font-weight: bold;
+            color: #0066cc;
+            margin-bottom: 4px;
+        }
+        .message-time {
+            font-size: 12px;
+            color: #666;
+            float: right;
+        }
+        .message-content {
+            font-size: 14px;
+            color: #333;
+            margin-top: 4px;
+            white-space: pre-wrap;
+        }
+        .controls {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+        button {
+            background-color: #0066cc;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-size: 14px;
+        }
+        button:hover {
+            background-color: #0052a3;
+        }
+        .info-section {
+            background-color: #f0f8ff;
+            border: 1px solid #b0d4ff;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .info-section h3 {
+            margin-top: 0;
+            color: #0066cc;
+            font-size: 16px;
+        }
+        .info-item {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .info-label {
+            font-weight: bold;
+            display: inline-block;
+            width: 120px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Mock Agent Assist (Child App)</h1>
+        
+        <div id="status" class="status inactive">
+            Call Status: Inactive
+        </div>
+
+        <div id="callInfo" class="info-section" style="display: none;">
+            <h3>Current Call Information</h3>
+            <div class="info-item">
+                <span class="info-label">UCID:</span>
+                <span id="ucid">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Agent SOE ID:</span>
+                <span id="agentId">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Customer:</span>
+                <span id="customerName">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Account:</span>
+                <span id="accountNumber">-</span>
+            </div>
+        </div>
+
+        <h3>Message Log</h3>
+        <div id="messageLog" class="message-log">
+            <div class="message-entry">
+                <div class="message-type">SYSTEM</div>
+                <div class="message-time">${new Date().toLocaleTimeString()}</div>
+                <div class="message-content">Mock child app initialized. Waiting for messages...</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button onclick="sendTestMessage('CHILD_READY')">Send CHILD_READY</button>
+            <button onclick="sendTestMessage('SUGGESTION')">Send Suggestion</button>
+            <button onclick="sendTestMessage('ERROR')">Send Error</button>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+    </div>
+
+    <script>
+        let callActive = false;
+        let currentCallData = null;
+
+        // Listen for messages from parent
+        window.addEventListener('message', function(event) {
+            console.log('Child received message:', event.data);
+            
+            // Log the message
+            addToLog('RECEIVED', event.data);
+
+            // Handle different message types
+            if (event.data.type) {
+                switch(event.data.type) {
+                    case 'START_CALL':
+                        handleStartCall(event.data);
+                        break;
+                    case 'END_CALL':
+                        handleEndCall();
+                        break;
+                    case 'SWITCH_ACCOUNT':
+                        handleSwitchAccount(event.data);
+                        break;
+                    case 'CUSTOMER_MESSAGE':
+                        handleCustomerMessage(event.data);
+                        break;
+                    case 'AGENT_MESSAGE':
+                        handleAgentMessage(event.data);
+                        break;
+                    case 'IFRAME_RELOAD':
+                        location.reload();
+                        break;
+                }
+            }
+        });
+
+        function handleStartCall(data) {
+            callActive = true;
+            currentCallData = data;
+            
+            document.getElementById('status').className = 'status active';
+            document.getElementById('status').textContent = 'Call Status: Active';
+            document.getElementById('callInfo').style.display = 'block';
+            
+            // Update call info
+            document.getElementById('ucid').textContent = data.callDetailsAO?.Ucid || '-';
+            document.getElementById('agentId').textContent = data.agentDetailsA0?.soeId || '-';
+            document.getElementById('customerName').textContent = data.customerDetailsAO?.customerName || 'Unknown';
+            document.getElementById('accountNumber').textContent = data.customerDetailsAO?.accountNumber || '-';
+
+            // Send acknowledgment
+            sendMessage({
+                type: 'CALL_STARTED',
+                ucid: data.callDetailsAO?.Ucid,
+                timestamp: new Date().toISOString()
+            });
+
+            // Simulate some agent assist suggestions after a delay
+            setTimeout(() => {
+                if (callActive) {
+                    sendMessage({
+                        type: 'SUGGESTION',
+                        suggestions: [
+                            'How may I assist you today?',
+                            'I can help you with account inquiries.',
+                            'Would you like to check your balance?'
+                        ]
+                    });
+                }
+            }, 2000);
+        }
+
+        function handleEndCall() {
+            callActive = false;
+            currentCallData = null;
+            
+            document.getElementById('status').className = 'status inactive';
+            document.getElementById('status').textContent = 'Call Status: Inactive';
+            document.getElementById('callInfo').style.display = 'none';
+
+            sendMessage({
+                type: 'CALL_ENDED',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        function handleSwitchAccount(data) {
+            if (callActive) {
+                document.getElementById('accountNumber').textContent = data.accountNumber || '-';
+                document.getElementById('customerName').textContent = data.accountName || 'Unknown';
+
+                sendMessage({
+                    type: 'ACCOUNT_SWITCHED',
+                    accountId: data.accountId,
+                    timestamp: new Date().toISOString()
+                });
+
+                // Generate new suggestions for the new account
+                setTimeout(() => {
+                    sendMessage({
+                        type: 'SUGGESTION',
+                        suggestions: [
+                            `I see you've switched to account ${data.accountNumber}.`,
+                            'How can I help with this account?',
+                            'Would you like to see recent transactions?'
+                        ]
+                    });
+                }, 1000);
+            }
+        }
+
+        function handleCustomerMessage(data) {
+            if (callActive) {
+                // Simulate processing and generating response suggestions
+                setTimeout(() => {
+                    sendMessage({
+                        type: 'SUGGESTION',
+                        trigger: 'customer_message',
+                        originalMessage: data.message,
+                        suggestions: generateSuggestions(data.message)
+                    });
+                }, 800);
+            }
+        }
+
+        function handleAgentMessage(data) {
+            // Just acknowledge agent messages
+            if (callActive) {
+                sendMessage({
+                    type: 'AGENT_MESSAGE_RECEIVED',
+                    message: data.message,
+                    timestamp: new Date().toISOString()
+                });
+            }
+        }
+
+        function generateSuggestions(customerMessage) {
+            const message = customerMessage.toLowerCase();
+            
+            if (message.includes('balance')) {
+                return [
+                    'Your current balance is $1,234.56',
+                    'Your available balance is $1,200.00',
+                    'Would you like to see recent transactions?'
+                ];
+            } else if (message.includes('transfer')) {
+                return [
+                    'I can help you with transfers.',
+                    'What type of transfer would you like to make?',
+                    'Please provide the destination account.'
+                ];
+            } else if (message.includes('card')) {
+                return [
+                    'I can assist with card services.',
+                    'Do you need to report a lost card?',
+                    'Would you like to check your card status?'
+                ];
+            } else {
+                return [
+                    'I understand. How can I help you with that?',
+                    'Could you provide more details?',
+                    'Let me check that for you.'
+                ];
+            }
+        }
+
+        function sendMessage(message) {
+            // Send to parent window
+            window.parent.postMessage(message, '*');
+            addToLog('SENT', message);
+        }
+
+        function sendTestMessage(type) {
+            const messages = {
+                'CHILD_READY': {
+                    type: 'CHILD_READY',
+                    version: '1.0.0',
+                    capabilities: ['suggestions', 'sentiment', 'summaries']
+                },
+                'SUGGESTION': {
+                    type: 'SUGGESTION',
+                    suggestions: [
+                        'Test suggestion 1',
+                        'Test suggestion 2',
+                        'Test suggestion 3'
+                    ],
+                    confidence: 0.85
+                },
+                'ERROR': {
+                    type: 'ERROR',
+                    error: 'Test error message',
+                    code: 'TEST_ERROR',
+                    timestamp: new Date().toISOString()
+                }
+            };
+
+            sendMessage(messages[type]);
+        }
+
+        function addToLog(direction, data) {
+            const log = document.getElementById('messageLog');
+            const entry = document.createElement('div');
+            entry.className = 'message-entry';
+            
+            const typeColor = direction === 'RECEIVED' ? '#008000' : '#0066cc';
+            
+            entry.innerHTML = `
+                <div class="message-type" style="color: ${typeColor}">${direction}: ${data.type || 'Unknown'}</div>
+                <div class="message-time">${new Date().toLocaleTimeString()}</div>
+                <div class="message-content">${JSON.stringify(data, null, 2)}</div>
+            `;
+            
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function clearLog() {
+            const log = document.getElementById('messageLog');
+            log.innerHTML = `
+                <div class="message-entry">
+                    <div class="message-type">SYSTEM</div>
+                    <div class="message-time">${new Date().toLocaleTimeString()}</div>
+                    <div class="message-content">Log cleared</div>
+                </div>
+            `;
+        }
+
+        // Send initial ready message
+        setTimeout(() => {
+            sendMessage({
+                type: 'CHILD_READY',
+                version: '1.0.0',
+                capabilities: ['suggestions', 'sentiment', 'summaries'],
+                timestamp: new Date().toISOString()
+            });
+        }, 1000);
+    </script>
+</body>
+</html>

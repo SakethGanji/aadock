@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from 'react'
+import { useCallback } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card"
 import { Button } from "../../ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select"
@@ -8,8 +8,10 @@ import { Checkbox } from "../../ui/checkbox"
 import { Switch } from "../../ui/switch"
 import { Settings, FileText, CreditCard, Eye, EyeOff, Trash2, Code, Search, Check, Plus, X, RotateCcw, Copy, Play } from "lucide-react"
 import CodeMirror from '@uiw/react-codemirror'
-import { json } from '@codemirror/lang-json'
-import { oneDark } from '@codemirror/theme-one-dark'
+import { defaultCodeMirrorSetup, getCodeMirrorTheme, jsonExtensions } from '../../../config/codemirror'
+import { useDarkMode } from '../../../hooks/useDarkMode'
+import { useClipboard } from '../../../hooks/useClipboard'
+import { validateJsonSyntax } from '../../../lib/utils'
 import type { LoginConfig, AccountTemplate } from '../../../../types/auth'
 import { useLoginConfig } from './useLoginConfig'
 import { PARENT_PROFILES, ENVIRONMENTS } from './login-constants'
@@ -24,25 +26,11 @@ interface LoginPageProps {
 export default function LoginPage({ onLogin }: LoginPageProps) {
   const [state, dispatch] = useLoginConfig()
   const { config, saveCredentials, saveDefaultAccount, useIframe, useWebsocket } = state
-  const [isDarkMode, setIsDarkMode] = useState(false)
+  const isDarkMode = useDarkMode()
+  const { copyToClipboard, isCopied } = useClipboard()
   
   const selectedProfile = PARENT_PROFILES.find((p) => p.id === config.parentProfile)
   const selectedEnvironment = ENVIRONMENTS.find((e) => e.id === config.environment)
-
-  // Detect dark mode
-  useEffect(() => {
-    const checkDarkMode = () => {
-      setIsDarkMode(document.documentElement.classList.contains('dark'))
-    }
-    
-    checkDarkMode()
-    
-    // Observer for class changes on html element
-    const observer = new MutationObserver(checkDarkMode)
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
-    
-    return () => observer.disconnect()
-  }, [])
 
   const handleLogin = useCallback(() => {
     // Save credentials if checkbox is checked
@@ -144,24 +132,6 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
     }
   }
 
-  const validateJsonSyntax = (value: string) => {
-    try {
-      JSON.parse(value)
-      return null
-    } catch (error) {
-      if (error instanceof SyntaxError) {
-        const match = error.message.match(/position (\d+)/)
-        if (match) {
-          const position = parseInt(match[1])
-          const lines = value.substring(0, position).split('\n')
-          const line = lines.length
-          return `Invalid JSON syntax at line ${line}`
-        }
-        return 'Invalid JSON syntax - check for trailing commas, missing quotes, or duplicate keys'
-      }
-      return 'Error parsing JSON'
-    }
-  }
 
   const handleParamsChange = (value: string) => {
     try {
@@ -211,8 +181,8 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
     }
   }
 
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(JSON.stringify(config.startCallParams, null, 2))
+  const handleCopyToClipboard = () => {
+    copyToClipboard(JSON.stringify(config.startCallParams, null, 2))
   }
 
   const handleReset = () => {
@@ -535,8 +505,9 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                       Call Parameters
                     </CardTitle>
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={copyToClipboard} title="Copy JSON">
+                      <Button variant="outline" size="sm" onClick={handleCopyToClipboard} title="Copy JSON">
                         <Copy className="w-4 h-4" />
+                        {isCopied && <span className="ml-1 text-xs">Copied!</span>}
                       </Button>
                       <Button 
                         variant="outline" 
@@ -571,8 +542,8 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                             <CodeMirror
                               value={state.jsonText || JSON.stringify(config.startCallParams, null, 2)}
                               height="450px"
-                              theme={isDarkMode ? oneDark : undefined}
-                              extensions={[json()]}
+                              theme={getCodeMirrorTheme(isDarkMode)}
+                              extensions={jsonExtensions}
                               onChange={(value) => {
                                 dispatch({ type: 'UPDATE_JSON_TEXT', payload: value })
                                 const syntaxError = validateJsonSyntax(value)
@@ -583,19 +554,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                                 }
                               }}
                               placeholder="Enter JSON parameters..."
-                              basicSetup={{
-                                lineNumbers: true,
-                                foldGutter: true,
-                                dropCursor: true,
-                                allowMultipleSelections: true,
-                                indentOnInput: true,
-                                bracketMatching: true,
-                                closeBrackets: true,
-                                autocompletion: true,
-                                rectangularSelection: true,
-                                highlightSelectionMatches: true,
-                                searchKeymap: true,
-                              }}
+                              basicSetup={defaultCodeMirrorSetup}
                             />
                           </div>
                           {state.jsonError && (

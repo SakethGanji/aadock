@@ -6,42 +6,10 @@ import AgentAssistTester from "@/components/agent-assist-tester"
 import Gallery from "@/components/gallery"
 import CustomRoutes from "@/components/custom-routes"
 import Navbar from "@/components/navbar"
-import type { LoginConfig, ParentProfile } from "../types/auth"
+import { PARENT_PROFILES } from "@/components/pages/login/login-constants"
+import type { LoginConfig } from "../types/auth"
 
 type TabType = "gallery" | "tester" | "routes"
-
-const PARENT_PROFILES: ParentProfile[] = [
-    {
-        id: "sawgrass",
-        name: "Sawgrass",
-        color: "bg-primary",
-        defaultBehaviors: {
-            autoStartCall: true,
-            tokenRefreshInterval: 30000,
-            defaultToken: "sawgrass_token_123",
-        },
-    },
-    {
-        id: "olympus",
-        name: "Olympus",
-        color: "bg-accent",
-        defaultBehaviors: {
-            autoStartCall: false,
-            tokenRefreshInterval: 60000,
-            defaultToken: "olympus_secure_456",
-        },
-    },
-    {
-        id: "eclipse",
-        name: "Eclipse",
-        color: "bg-secondary",
-        defaultBehaviors: {
-            autoStartCall: true,
-            tokenRefreshInterval: 45000,
-            defaultToken: "eclipse_auth_789",
-        },
-    },
-]
 
 export default function App() {
     const [isLoggedIn, setIsLoggedIn] = useState(false)
