@@ -47,6 +47,7 @@ export const initialState: LoginState = {
     localhostIframeUrl: "http://localhost:3001",
     localhostWebsocketUrl: "ws://localhost:8080",
     selectedAccounts: [],
+    autoStartCall: undefined, // Will use profile default if not set
   },
   activeTab: 'config',
   showPassword: false,

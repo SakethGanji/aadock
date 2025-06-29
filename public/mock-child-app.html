@@ -166,16 +166,75 @@
     <script>
         let callActive = false;
         let currentCallData = null;
+        let appConfig = {};
+        let hasInitialized = false;
+
+        // Initialize app and read query parameters
+        function initializeApp() {
+            if (hasInitialized) return; // Prevent duplicate initialization
+            hasInitialized = true;
+            
+            // Get parameters from URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const appName = urlParams.get('appName'); // Should be 'aadesktop'
+            const cat1Token = urlParams.get('cat1');
+            const desktopView = urlParams.get('desktopview'); // eclipse, olympus, or sawgrass
+            
+            console.log('[Mock Child App] Initialized for', desktopView, 'parent');
+            
+            // Store for later use
+            appConfig = {
+                appName,
+                token: cat1Token,
+                parentApp: desktopView
+            };
+            
+            // Update UI to show config
+            document.getElementById('status').innerHTML = `Call Status: Inactive (${desktopView || 'Unknown'} Parent)`;
+            
+            // Send appropriate initial message based on parent app
+            // Note: These are sent immediately on load, not waiting for Start Call
+            setTimeout(() => {
+                switch(desktopView) {
+                    case 'sawgrass':
+                    case 'olympus':
+                        sendMessage({
+                            eventType: 'AA',
+                            eventName: 'AALoadComplete'
+                        });
+                        break;
+                    case 'eclipse':
+                        sendMessage({
+                            eventType: 'AA',
+                            eventName: 'AAReady'
+                        });
+                        break;
+                    default:
+                        console.log('[Mock Child App] Unknown parent app:', desktopView);
+                        // Send AALoadComplete as default
+                        sendMessage({
+                            eventType: 'AA',
+                            eventName: 'AALoadComplete'
+                        });
+                }
+            }, 1000);
+        }
 
         // Listen for messages from parent
         window.addEventListener('message', function(event) {
-            console.log('Child received message:', event.data);
+            // Message received
             
             // Log the message
             addToLog('RECEIVED', event.data);
 
             // Handle different message types
-            if (event.data.type) {
+            if (event.data.eventName === 'cat1' && appConfig.parentApp === 'eclipse') {
+                handleCat1Event(event.data);
+            } else if (event.data.eventName === 'initiateAA') {
+                handleInitiateAA(event.data);
+            } else if (event.data.eventName === 'AGENT_TRANSCRIPT') {
+                handleAgentTranscript(event.data);
+            } else if (event.data.type) {
                 switch(event.data.type) {
                     case 'START_CALL':
                         handleStartCall(event.data);
@@ -199,40 +258,45 @@
             }
         });
 
-        function handleStartCall(data) {
+        function handleCat1Event(data) {
+            console.log('Received cat1 event with token:', data.token);
+            // Store token for future use
+            sessionStorage.setItem('authToken', data.token);
+            
+            // Send AALoadComplete after processing cat1
+            setTimeout(() => {
+                sendMessage({
+                    eventType: 'AA',
+                    eventName: 'AALoadComplete'
+                });
+            }, 500);
+        }
+
+        function handleInitiateAA(data) {
+            if (callActive) return; // Prevent duplicate handling
+            
             callActive = true;
             currentCallData = data;
             
             document.getElementById('status').className = 'status active';
-            document.getElementById('status').textContent = 'Call Status: Active';
+            document.getElementById('status').textContent = `Call Status: Active (${appConfig.parentApp} Parent)`;
             document.getElementById('callInfo').style.display = 'block';
             
-            // Update call info
-            document.getElementById('ucid').textContent = data.callDetailsAO?.Ucid || '-';
-            document.getElementById('agentId').textContent = data.agentDetailsA0?.soeId || '-';
+            // Update call info - note the correct property names
+            document.getElementById('ucid').textContent = data.callDetailsAO?.ucid || data.callDetailsAO?.Ucid || '-';
+            document.getElementById('agentId').textContent = data.agentDetailsAO?.soeld || data.agentDetailsAO?.soeId || '-';
             document.getElementById('customerName').textContent = data.customerDetailsAO?.customerName || 'Unknown';
             document.getElementById('accountNumber').textContent = data.customerDetailsAO?.accountNumber || '-';
 
-            // Send acknowledgment
-            sendMessage({
-                type: 'CALL_STARTED',
-                ucid: data.callDetailsAO?.Ucid,
-                timestamp: new Date().toISOString()
-            });
+            // That's it - no additional messages should be sent after receiving initiateAA
+            // The flow is complete at this point
+        }
 
-            // Simulate some agent assist suggestions after a delay
-            setTimeout(() => {
-                if (callActive) {
-                    sendMessage({
-                        type: 'SUGGESTION',
-                        suggestions: [
-                            'How may I assist you today?',
-                            'I can help you with account inquiries.',
-                            'Would you like to check your balance?'
-                        ]
-                    });
-                }
-            }, 2000);
+        function handleStartCall(data) {
+            // For START_CALL type messages, use the same handler
+            if (data.type === 'START_CALL') {
+                handleInitiateAA(data);
+            }
         }
 
         function handleEndCall() {
@@ -296,6 +360,30 @@
                     message: data.message,
                     timestamp: new Date().toISOString()
                 });
+            }
+        }
+
+        function handleAgentTranscript(data) {
+            // Handle AGENT_TRANSCRIPT messages
+            if (callActive && data.data) {
+                console.log('Received agent transcript:', data.data.msg);
+                
+                // Acknowledge receipt
+                sendMessage({
+                    type: 'TRANSCRIPT_RECEIVED',
+                    messageId: data.data.messageId,
+                    timestamp: new Date().toISOString()
+                });
+                
+                // Simulate processing and generating suggestions
+                setTimeout(() => {
+                    sendMessage({
+                        type: 'SUGGESTION',
+                        trigger: 'agent_transcript',
+                        originalMessage: data.data.msg,
+                        suggestions: generateSuggestions(data.data.msg)
+                    });
+                }, 800);
             }
         }
 
@@ -390,15 +478,8 @@
             `;
         }
 
-        // Send initial ready message
-        setTimeout(() => {
-            sendMessage({
-                type: 'CHILD_READY',
-                version: '1.0.0',
-                capabilities: ['suggestions', 'sentiment', 'summaries'],
-                timestamp: new Date().toISOString()
-            });
-        }, 1000);
+        // Initialize the app on load
+        initializeApp();
     </script>
 </body>
 </html>

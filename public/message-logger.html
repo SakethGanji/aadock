@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Message Flow Logger</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .log { margin: 5px 0; padding: 5px; border-radius: 3px; }
+        .parent-to-child { background: #e3f2fd; }
+        .child-to-parent { background: #f3e5f5; }
+        button { margin: 10px 5px; padding: 5px 10px; }
+    </style>
+</head>
+<body>
+    <h2>Message Flow Logger</h2>
+    <p>This logger shows only PARENT->CHILD and CHILD->PARENT messages</p>
+    <button onclick="clearLogs()">Clear Logs</button>
+    <button onclick="copyLogs()">Copy Logs</button>
+    <div id="logs"></div>
+
+    <script>
+        const logs = [];
+        const logsDiv = document.getElementById('logs');
+
+        // Override console.log to capture specific messages
+        const originalLog = console.log;
+        console.log = function(...args) {
+            const firstArg = args[0];
+            if (typeof firstArg === 'string' && 
+                (firstArg.includes('[PARENT -> CHILD]') || 
+                 firstArg.includes('[CHILD -> PARENT]'))) {
+                
+                const isParentToChild = firstArg.includes('[PARENT -> CHILD]');
+                const logEntry = {
+                    time: new Date().toLocaleTimeString(),
+                    direction: firstArg,
+                    message: args[1],
+                    data: args[2]
+                };
+                
+                logs.push(logEntry);
+                displayLog(logEntry, isParentToChild);
+            }
+            originalLog.apply(console, args);
+        };
+
+        function displayLog(entry, isParentToChild) {
+            const div = document.createElement('div');
+            div.className = `log ${isParentToChild ? 'parent-to-child' : 'child-to-parent'}`;
+            div.textContent = `${entry.time} ${entry.direction} ${entry.message}`;
+            logsDiv.appendChild(div);
+        }
+
+        function clearLogs() {
+            logs.length = 0;
+            logsDiv.innerHTML = '';
+        }
+
+        function copyLogs() {
+            const text = logs.map(log => 
+                `${log.time} ${log.direction} ${log.message}`
+            ).join('\n');
+            navigator.clipboard.writeText(text);
+            alert('Logs copied to clipboard');
+        }
+    </script>
+</body>
+</html>

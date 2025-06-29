@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card"
 import { Button } from "../../ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select"
@@ -18,6 +18,7 @@ import { PARENT_PROFILES, ENVIRONMENTS } from './login-constants'
 import { getAccountTemplates } from '../../../../data/account-templates'
 import { CALL_TEMPLATES } from '../../../../data/call-templates'
 import { AddAccountForm } from './AddAccountForm'
+import { TokenService } from '../../../services/tokenService'
 
 interface LoginPageProps {
   onLogin: (config: LoginConfig) => void
@@ -28,35 +29,61 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   const { config, saveCredentials, saveDefaultAccount, useIframe, useWebsocket } = state
   const isDarkMode = useDarkMode()
   const { copyToClipboard, isCopied } = useClipboard()
+  const [isGeneratingToken, setIsGeneratingToken] = useState(false)
   
   const selectedProfile = PARENT_PROFILES.find((p) => p.id === config.parentProfile)
   const selectedEnvironment = ENVIRONMENTS.find((e) => e.id === config.environment)
 
-  const handleLogin = useCallback(() => {
-    // Save credentials if checkbox is checked
-    if (saveCredentials && config.environment) {
-      const dataToSave = {
-        username: config.username,
-        password: config.password
+  const handleLogin = useCallback(async () => {
+    setIsGeneratingToken(true)
+    
+    try {
+      // Save credentials if checkbox is checked
+      if (saveCredentials && config.environment) {
+        const dataToSave = {
+          username: config.username,
+          password: config.password
+        }
+        localStorage.setItem(`aa-credentials-${config.environment}`, JSON.stringify(dataToSave))
+      } else if (!saveCredentials && config.environment) {
+        // Remove saved credentials if checkbox is unchecked
+        localStorage.removeItem(`aa-credentials-${config.environment}`)
       }
-      localStorage.setItem(`aa-credentials-${config.environment}`, JSON.stringify(dataToSave))
-    } else if (!saveCredentials && config.environment) {
-      // Remove saved credentials if checkbox is unchecked
-      localStorage.removeItem(`aa-credentials-${config.environment}`)
-    }
-    
-    // Save default account if checkbox is checked
-    if (saveDefaultAccount && config.parentProfile && config.environment && config.selectedAccounts && config.selectedAccounts.length > 0) {
-      localStorage.setItem(
-        `aa-default-account-${config.parentProfile}-${config.environment}`, 
-        JSON.stringify(config.selectedAccounts[0])
+      
+      // Save default account if checkbox is checked
+      if (saveDefaultAccount && config.parentProfile && config.environment && config.selectedAccounts && config.selectedAccounts.length > 0) {
+        localStorage.setItem(
+          `aa-default-account-${config.parentProfile}-${config.environment}`, 
+          JSON.stringify(config.selectedAccounts[0])
+        )
+      } else if (!saveDefaultAccount && config.parentProfile && config.environment) {
+        // Remove saved default account if checkbox is unchecked
+        localStorage.removeItem(`aa-default-account-${config.parentProfile}-${config.environment}`)
+      }
+      
+      // Generate token on login
+      const tokenService = new TokenService()
+      const tokenData = await tokenService.getToken(
+        config.parentProfile, // eclipse, olympus, or sawgrass
+        {
+          username: config.username,
+          password: config.password,
+          environment: config.environment
+        }
       )
-    } else if (!saveDefaultAccount && config.parentProfile && config.environment) {
-      // Remove saved default account if checkbox is unchecked
-      localStorage.removeItem(`aa-default-account-${config.parentProfile}-${config.environment}`)
+      console.log('[Login] Token generated successfully')
+      
+      // Pass token along with config
+      onLogin({
+        ...config,
+        token: tokenData.token
+      })
+    } catch (error) {
+      console.error('Failed to generate token:', error)
+      alert('Failed to generate authentication token. Please try again.')
+    } finally {
+      setIsGeneratingToken(false)
     }
-    
-    onLogin(config)
   }, [config, saveCredentials, saveDefaultAccount, onLogin])
 
   const isFormValid = useCallback(() => {
@@ -264,16 +291,49 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                       <p className="text-xs text-muted-foreground">{selectedEnvironment.url}</p>
                     )}
                   </div>
+                  
+                  {/* Auto Start Call Toggle */}
+                  <div className="flex items-center justify-between py-3 border-t">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="auto-start-call" className="text-sm font-medium cursor-pointer">
+                        Auto Start Call
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {config.autoStartCall === undefined 
+                          ? `Uses ${selectedProfile?.name || 'profile'} default (${selectedProfile?.defaultBehaviors.autoStartCall ? 'enabled' : 'disabled'})`
+                          : config.autoStartCall ? 'Enabled - Call starts automatically' : 'Disabled - Manual start required'
+                        }
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={() => dispatch({ type: 'SET_FIELD', payload: { field: 'autoStartCall', value: undefined } })}
+                        disabled={config.autoStartCall === undefined}
+                      >
+                        Use Default
+                      </Button>
+                      <Switch
+                        id="auto-start-call"
+                        checked={config.autoStartCall ?? selectedProfile?.defaultBehaviors.autoStartCall ?? false}
+                        onCheckedChange={(checked) => 
+                          dispatch({ type: 'SET_FIELD', payload: { field: 'autoStartCall', value: checked } })
+                        }
+                      />
+                    </div>
+                  </div>
                 </div>
                 
                 <Button 
                   onClick={handleLogin} 
-                  disabled={!isFormValid()} 
+                  disabled={!isFormValid() || isGeneratingToken} 
                   className="px-6 mb-2"
                   title={!config.selectedAccounts || config.selectedAccounts.length === 0 ? "Please select an account" : ""}
                 >
                   <Play className="w-4 h-4 mr-2" />
-                  Start
+                  {isGeneratingToken ? 'Generating Token...' : 'Start'}
                 </Button>
               </div>
               

@@ -1,7 +1,7 @@
 "use client"
 
 
-import { useState, useRef, useCallback, useEffect } from "react"
+import { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import CodeMirror from '@uiw/react-codemirror'
 import { json } from '@codemirror/lang-json'
 import { oneDark } from '@codemirror/theme-one-dark'
@@ -41,6 +41,9 @@ import {
 } from "@/data/message-templates"
 import { getAccountTemplates } from "../../data/account-templates"
 import type { AccountTemplate } from "../../types/auth"
+import { buildAgentAssistUrl } from "../services/iframeUrlBuilder"
+import { EventFlowManager } from "../services/eventFlowManager"
+import { ENVIRONMENTS } from "./pages/login/login-constants"
 
 interface LogEntry {
   timestamp: string
@@ -82,7 +85,7 @@ interface AgentAssistTesterProps {
 }
 
 export default function AgentAssistTester({ config, profile, onLogout: _onLogout }: AgentAssistTesterProps) {
-  const [iframeSize, setIframeSize] = useState({ width: 1366, height: 768 })
+  const [iframeSize, setIframeSize] = useState({ width: 320, height: 568 })
   const [selectedEvent, setSelectedEvent] = useState<string>("START_CALL")
   const [eventPayload, setEventPayload] = useState<string>(JSON.stringify(config.startCallParams, null, 2))
   const [logs, setLogs] = useState<LogEntry[]>([])
@@ -109,6 +112,25 @@ export default function AgentAssistTester({ config, profile, onLogout: _onLogout
   })
 
   const iframeRef = useRef<HTMLIFrameElement>(null)
+  const [flowManager, setFlowManager] = useState<EventFlowManager | null>(null)
+  
+  // Build iframe URL with query params
+  const iframeSrc = useMemo(() => {
+    const environment = ENVIRONMENTS.find(e => e.id === config.environment)
+    if (!environment || !config.token) return '/mock-child-app.html'
+    
+    // For local development, always use mock child app with query params
+    if (environment.id === 'local' || environment.url.includes('example.com')) {
+      const params = new URLSearchParams({
+        appName: 'aadesktop',
+        cat1: config.token,
+        desktopview: config.parentProfile.toLowerCase()
+      });
+      return `/mock-child-app.html?${params.toString()}`
+    }
+    
+    return buildAgentAssistUrl(environment, config.token, config.parentProfile)
+  }, [config])
 
   const addLog = useCallback((type: "sent" | "received", event: string, payload: any) => {
     const logEntry: LogEntry = {
@@ -134,13 +156,28 @@ export default function AgentAssistTester({ config, profile, onLogout: _onLogout
   const handleSendEvent = () => {
     try {
       const payload = JSON.parse(eventPayload)
-      sendMessage(selectedEvent, payload)
-
-      // Update call state based on event
+      
       if (selectedEvent === "START_CALL") {
-        setCallActive(true)
+        if (flowManager) {
+          // Start the LOB-specific flow - flowManager handles all messaging
+          flowManager.startCall(payload)
+          setCallActive(true)
+          // Don't send any START_CALL message - flowManager handles the flow
+        } else {
+          // No flow manager, send START_CALL directly (shouldn't happen)
+          sendMessage(selectedEvent, payload)
+          setCallActive(true)
+        }
       } else if (selectedEvent === "END_CALL") {
-        setCallActive(false)
+        if (flowManager) {
+          flowManager.endCall() // This will dispatch callStatusChanged event
+        } else {
+          setCallActive(false)
+        }
+        sendMessage(selectedEvent, payload)
+      } else {
+        // Other events sent directly
+        sendMessage(selectedEvent, payload)
       }
     } catch (error) {
       alert("Invalid JSON payload")
@@ -190,9 +227,14 @@ export default function AgentAssistTester({ config, profile, onLogout: _onLogout
 
   const reloadIframe = () => {
     if (iframeRef.current) {
-      iframeRef.current.src = iframeRef.current.src
+      iframeRef.current.src = iframeSrc
       setCallActive(false)
       addLog("sent", "IFRAME_RELOAD", {})
+      
+      // Re-initialize flow manager after reload
+      if (flowManager) {
+        flowManager.endCall()
+      }
     }
   }
 
@@ -202,13 +244,55 @@ export default function AgentAssistTester({ config, profile, onLogout: _onLogout
     const handleMessage = (event: MessageEvent) => {
       // Only log messages from the iframe
       if (event.source === iframeRef.current?.contentWindow) {
-        addLog("received", event.data.type || "MESSAGE", event.data)
+        addLog("received", event.data.type || event.data.eventName || "MESSAGE", event.data)
       }
     }
 
     window.addEventListener("message", handleMessage)
     return () => window.removeEventListener("message", handleMessage)
   }, [addLog])
+
+  // Listen for call status changes from EventFlowManager
+  useEffect(() => {
+    const handleCallStatusChange = (event: CustomEvent) => {
+      setCallActive(event.detail.active)
+    }
+
+    window.addEventListener("callStatusChanged", handleCallStatusChange as EventListener)
+    return () => window.removeEventListener("callStatusChanged", handleCallStatusChange as EventListener)
+  }, [])
+  
+  // Initialize flow manager after iframe loads
+  useEffect(() => {
+    // Only create flow manager if we don't already have one
+    if (iframeRef.current && config.token && !flowManager) {
+      const manager = new EventFlowManager(
+        config.parentProfile,
+        iframeRef,
+        config.token
+      )
+      
+      // Initialize with auto-start based on config or profile default
+      const autoStartEnabled = config.autoStartCall !== undefined 
+        ? config.autoStartCall 
+        : profile.defaultBehaviors.autoStartCall;
+        
+      manager.initialize(
+        config.startCallParams,
+        autoStartEnabled
+      )
+      
+      setFlowManager(manager)
+      
+      // Flow manager already logs sent messages internally
+      
+      // Cleanup function
+      return () => {
+        manager.endCall()
+        setFlowManager(null)
+      }
+    }
+  }, [config.token, config.parentProfile]) // Only re-create when token or profile changes
 
   // Load accounts based on profile and environment
   useEffect(() => {
@@ -231,15 +315,8 @@ export default function AgentAssistTester({ config, profile, onLogout: _onLogout
     return () => observer.disconnect()
   }, [])
 
-  // Auto-start call if profile setting is enabled
-  useEffect(() => {
-    if (profile.defaultBehaviors.autoStartCall) {
-      setTimeout(() => {
-        handleEventChange("START_CALL")
-        setTimeout(handleSendEvent, 500)
-      }, 1000)
-    }
-  }, [])
+  // Remove auto-start logic from here - it's handled by EventFlowManager
+  // The EventFlowManager's initialize method already handles auto-start based on config
 
   // Conversation playback logic
   useEffect(() => {
@@ -257,10 +334,36 @@ export default function AgentAssistTester({ config, profile, onLogout: _onLogout
     const delay = currentMessage.delay || conversation.defaultDelay
 
     const timer = setTimeout(() => {
-      sendMessage(
-        currentMessage.type === 'customer' ? 'CUSTOMER_MESSAGE' : 'AGENT_MESSAGE',
-        { message: currentMessage.text }
-      )
+      if (currentMessage.type === 'customer') {
+        sendMessage('CUSTOMER_MESSAGE', { message: currentMessage.text })
+      } else {
+        // Agent messages use AGENT_TRANSCRIPT format
+        const timestamp = new Date().toLocaleTimeString()
+        const timestampValue = Date.now()
+        const messageId = crypto.randomUUID()
+        
+        const transcriptMessage = {
+          eventName: 'AGENT_TRANSCRIPT',
+          data: {
+            agentId: config.startCallParams.agentDetailsA0?.soeId || 'SOE12345',
+            customerId: '9430874843110687',
+            chatSessionId: '123',
+            timestamp: timestamp,
+            timestampValue: timestampValue,
+            from: 'user',
+            msg: currentMessage.text,
+            type: 'user',
+            isFromSocket: false,
+            messageId: messageId,
+          }
+        }
+        
+        // Send directly to iframe
+        if (iframeRef.current?.contentWindow) {
+          iframeRef.current.contentWindow.postMessage(transcriptMessage, '*')
+          addLog("sent", "AGENT_TRANSCRIPT", transcriptMessage)
+        }
+      }
 
       if (conversationState.currentIndex < conversation.messages.length - 1) {
         setConversationState(prev => ({
@@ -291,10 +394,36 @@ export default function AgentAssistTester({ config, profile, onLogout: _onLogout
   }
 
   const sendUtterance = (utterance: Utterance) => {
-    sendMessage(
-      utterance.type === 'customer' ? 'CUSTOMER_MESSAGE' : 'AGENT_MESSAGE',
-      { message: utterance.text }
-    )
+    if (utterance.type === 'customer') {
+      sendMessage('CUSTOMER_MESSAGE', { message: utterance.text })
+    } else {
+      // Agent utterances use AGENT_TRANSCRIPT format
+      const timestamp = new Date().toLocaleTimeString()
+      const timestampValue = Date.now()
+      const messageId = crypto.randomUUID()
+      
+      const transcriptMessage = {
+        eventName: 'AGENT_TRANSCRIPT',
+        data: {
+          agentId: config.startCallParams.agentDetailsA0?.soeId || 'SOE12345',
+          customerId: '9430874843110687',
+          chatSessionId: '123',
+          timestamp: timestamp,
+          timestampValue: timestampValue,
+          from: 'user',
+          msg: utterance.text,
+          type: 'user',
+          isFromSocket: false,
+          messageId: messageId,
+        }
+      }
+      
+      // Send directly to iframe
+      if (iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(transcriptMessage, '*')
+        addLog("sent", "AGENT_TRANSCRIPT", transcriptMessage)
+      }
+    }
   }
 
   return (
@@ -360,13 +489,14 @@ export default function AgentAssistTester({ config, profile, onLogout: _onLogout
                     variant="outline"
                     size="sm"
                     className="w-full justify-start text-xs"
+                    disabled={config.autoStartCall !== undefined ? config.autoStartCall : profile.defaultBehaviors.autoStartCall}
                     onClick={() => {
                       handleEventChange("START_CALL")
                       setTimeout(handleSendEvent, 100)
                     }}
                   >
                     <Play className="w-3 h-3 mr-1.5" />
-                    Start Call
+                    {(config.autoStartCall !== undefined ? config.autoStartCall : profile.defaultBehaviors.autoStartCall) ? 'Auto-Start Enabled' : 'Start Call'}
                   </Button>
                   
                   <div className="flex gap-2">
@@ -531,7 +661,33 @@ export default function AgentAssistTester({ config, profile, onLogout: _onLogout
                           className="w-full mt-2"
                           onClick={() => {
                             if (messageFlow.agentMessage) {
-                              sendMessage("AGENT_MESSAGE", { message: messageFlow.agentMessage })
+                              // Send AGENT_TRANSCRIPT format
+                              const timestamp = new Date().toLocaleTimeString()
+                              const timestampValue = Date.now()
+                              const messageId = crypto.randomUUID()
+                              
+                              const transcriptMessage = {
+                                eventName: 'AGENT_TRANSCRIPT',
+                                data: {
+                                  agentId: config.startCallParams.agentDetailsA0?.soeId || 'SOE12345',
+                                  customerId: '9430874843110687',
+                                  chatSessionId: '123',
+                                  timestamp: timestamp,
+                                  timestampValue: timestampValue,
+                                  from: 'user',
+                                  msg: messageFlow.agentMessage,
+                                  type: 'user',
+                                  isFromSocket: false,
+                                  messageId: messageId,
+                                }
+                              }
+                              
+                              // Send directly to iframe, not through sendMessage
+                              if (iframeRef.current?.contentWindow) {
+                                iframeRef.current.contentWindow.postMessage(transcriptMessage, '*')
+                                addLog("sent", "AGENT_TRANSCRIPT", transcriptMessage)
+                              }
+                              
                               setMessageFlow({ ...messageFlow, agentMessage: "" })
                             }
                           }}
@@ -886,7 +1042,7 @@ export default function AgentAssistTester({ config, profile, onLogout: _onLogout
                 >
                   <iframe
                     ref={iframeRef}
-                    src="/mock-child-app.html"
+                    src={iframeSrc}
                     className="w-full h-full border-0"
                     title="Agent Assist"
                   />

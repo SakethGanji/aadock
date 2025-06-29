@@ -8,6 +8,8 @@ export interface LoginConfig {
   localhostIframeUrl?: string
   localhostWebsocketUrl?: string
   selectedAccounts?: AccountTemplate[]
+  token?: string
+  autoStartCall?: boolean
 }
 
 export interface ParentProfile {

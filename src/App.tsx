@@ -5,11 +5,12 @@ import LoginPage from "@/components/login-page"
 import AgentAssistTester from "@/components/agent-assist-tester"
 import Gallery from "@/components/gallery"
 import CustomRoutes from "@/components/custom-routes"
+import { MongoPage } from "@/components/mongo-page"
 import Navbar from "@/components/navbar"
 import { PARENT_PROFILES } from "@/components/pages/login/login-constants"
 import type { LoginConfig } from "../types/auth"
 
-type TabType = "gallery" | "tester" | "routes"
+type TabType = "gallery" | "tester" | "routes" | "mongo"
 
 export default function App() {
     const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -42,7 +43,7 @@ export default function App() {
             {/* Main content */}
             <div>
                 {activeTab === "gallery" && (
-                    <Gallery onNavigateToTester={() => setActiveTab("tester")} />
+                    <Gallery />
                 )}
                 
                 {activeTab === "tester" && (
@@ -61,6 +62,10 @@ export default function App() {
                 
                 {activeTab === "routes" && (
                     <CustomRoutes />
+                )}
+                
+                {activeTab === "mongo" && (
+                    <MongoPage />
                 )}
             </div>
         </div>
