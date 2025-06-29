@@ -156,6 +156,11 @@ export class EventFlowManager {
     // Notify that call is now active
     window.dispatchEvent(new CustomEvent('callStatusChanged', { detail: { active: true } }));
   }
+
+  updateStartCallParams(newParams: any) {
+    this.startCallParams = newParams;
+    console.log('[EventFlowManager] Updated startCallParams with new customerDetailsAO');
+  }
   
   endCall() {
     this.isCallActive = false;

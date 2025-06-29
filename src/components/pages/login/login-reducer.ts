@@ -1,6 +1,14 @@
 import type { LoginConfig, AccountTemplate } from "../../../../types/auth"
 import { CALL_TEMPLATES } from "../../../../data/call-templates"
 
+export interface AutoGenerationConfig {
+  autoGenerateUcid: boolean
+  autoGenerateConvertedUcid: boolean
+  autoGenerateTimestamp: boolean
+  customUcidLength: number
+  customPrefix: string
+}
+
 export interface LoginState {
   config: LoginConfig
   activeTab: 'config' | 'parameters' | 'accounts'
@@ -18,6 +26,7 @@ export interface LoginState {
   useWebsocket: boolean
   saveCredentials: boolean
   saveDefaultAccount: boolean
+  autoGenConfig: AutoGenerationConfig
 }
 
 export type LoginAction =
@@ -35,6 +44,8 @@ export type LoginAction =
   | { type: 'UPDATE_JSON_TEXT'; payload: string }
   | { type: 'TOGGLE_FIELD_SELECTION'; payload: string }
   | { type: 'SET_ALL_FIELDS'; payload: string[] }
+  | { type: 'SET_AUTO_GEN_CONFIG'; payload: Partial<AutoGenerationConfig> }
+  | { type: 'APPLY_AUTO_GENERATION'; payload?: void }
 
 export const initialState: LoginState = {
   config: {
@@ -64,6 +75,13 @@ export const initialState: LoginState = {
   useWebsocket: false,
   saveCredentials: false,
   saveDefaultAccount: false,
+  autoGenConfig: {
+    autoGenerateUcid: true,
+    autoGenerateConvertedUcid: true,
+    autoGenerateTimestamp: false,
+    customUcidLength: 10,
+    customPrefix: ''
+  }
 }
 
 export function loginReducer(state: LoginState, action: LoginAction): LoginState {
@@ -92,12 +110,42 @@ export function loginReducer(state: LoginState, action: LoginAction): LoginState
       const template = CALL_TEMPLATES.find((t: any) => t.id === `start_call_${newProfile}`)
       
       if (template) {
-        const newParams = {
-          ...template.params,
-          callDetailsAO: {
-            ...template.params.callDetailsAO,
-            Ucid: `${Date.now()}00000000000`,
-            convertedUcid: `${newProfile.toUpperCase()}${Date.now()}`
+        let newParams = { ...template.params }
+
+        // Apply auto-generation settings
+        if (state.autoGenConfig.autoGenerateUcid) {
+          const timestamp = Date.now().toString()
+          const paddingLength = Math.max(0, state.autoGenConfig.customUcidLength - timestamp.length)
+          const ucid = timestamp + '0'.repeat(paddingLength)
+          
+          newParams = {
+            ...newParams,
+            callDetailsAO: {
+              ...newParams.callDetailsAO,
+              Ucid: ucid
+            }
+          }
+        }
+
+        if (state.autoGenConfig.autoGenerateConvertedUcid) {
+          const prefix = state.autoGenConfig.customPrefix || newProfile.toUpperCase()
+          newParams = {
+            ...newParams,
+            callDetailsAO: {
+              ...newParams.callDetailsAO,
+              convertedUcid: `${prefix}${Date.now()}`
+            }
+          }
+        }
+
+        if (state.autoGenConfig.autoGenerateTimestamp) {
+          const timestamp = new Date().toISOString()
+          newParams = {
+            ...newParams,
+            callDetailsAO: {
+              ...newParams.callDetailsAO,
+              timestamp: timestamp
+            }
           }
         }
         
@@ -260,6 +308,84 @@ export function loginReducer(state: LoginState, action: LoginAction): LoginState
         ...state,
         ...action.payload,
       }
+
+    case 'SET_AUTO_GEN_CONFIG':
+      return {
+        ...state,
+        autoGenConfig: {
+          ...state.autoGenConfig,
+          ...action.payload,
+        },
+      }
+
+    case 'APPLY_AUTO_GENERATION': {
+      if (!state.config.startCallParams || !state.config.parentProfile) {
+        return state
+      }
+
+      let updatedParams = { ...state.config.startCallParams }
+
+      // Helper functions for generation
+      const generateUcid = () => {
+        if (state.autoGenConfig.customUcidLength > 0) {
+          const timestamp = Date.now().toString()
+          const paddingLength = Math.max(0, state.autoGenConfig.customUcidLength - timestamp.length)
+          return timestamp + '0'.repeat(paddingLength)
+        }
+        return `${Date.now()}00000000000`
+      }
+
+      const generateConvertedUcid = () => {
+        const prefix = state.autoGenConfig.customPrefix || state.config.parentProfile.toUpperCase()
+        return `${prefix}${Date.now()}`
+      }
+
+      // Auto-generate UCID if enabled
+      if (state.autoGenConfig.autoGenerateUcid && updatedParams.callDetailsAO) {
+        updatedParams = {
+          ...updatedParams,
+          callDetailsAO: {
+            ...updatedParams.callDetailsAO,
+            Ucid: generateUcid()
+          }
+        }
+      }
+
+      // Auto-generate convertedUcid if enabled
+      if (state.autoGenConfig.autoGenerateConvertedUcid && updatedParams.callDetailsAO) {
+        updatedParams = {
+          ...updatedParams,
+          callDetailsAO: {
+            ...updatedParams.callDetailsAO,
+            convertedUcid: generateConvertedUcid()
+          }
+        }
+      }
+
+      // Update timestamp fields if enabled
+      if (state.autoGenConfig.autoGenerateTimestamp) {
+        const timestamp = new Date().toISOString()
+        if (updatedParams.callDetailsAO) {
+          updatedParams = {
+            ...updatedParams,
+            callDetailsAO: {
+              ...updatedParams.callDetailsAO,
+              timestamp: timestamp
+            }
+          }
+        }
+      }
+
+      return {
+        ...state,
+        config: {
+          ...state.config,
+          startCallParams: updatedParams,
+        },
+        jsonText: JSON.stringify(updatedParams, null, 2),
+        jsonError: null,
+      }
+    }
 
     default:
       return state

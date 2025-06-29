@@ -148,17 +148,14 @@
 
         <h3>Message Log</h3>
         <div id="messageLog" class="message-log">
-            <div class="message-entry">
-                <div class="message-type">SYSTEM</div>
-                <div class="message-time">${new Date().toLocaleTimeString()}</div>
-                <div class="message-content">Mock child app initialized. Waiting for messages...</div>
-            </div>
+            <!-- Log entries will be added dynamically -->
         </div>
 
         <div class="controls">
             <button onclick="sendTestMessage('CHILD_READY')">Send CHILD_READY</button>
             <button onclick="sendTestMessage('SUGGESTION')">Send Suggestion</button>
             <button onclick="sendTestMessage('ERROR')">Send Error</button>
+            <button onclick="sendTestMessage('WEBSOCKET_LOG')">Send WebSocket Log</button>
             <button onclick="clearLog()">Clear Log</button>
         </div>
     </div>
@@ -222,9 +219,11 @@
 
         // Listen for messages from parent
         window.addEventListener('message', function(event) {
-            // Message received
+            // Skip messages from self or unknown sources
+            if (event.source === window) return;
             
-            // Log the message
+            // Log all messages received from parent
+            console.log('[Child App] Received message:', event.data);
             addToLog('RECEIVED', event.data);
 
             // Handle different message types
@@ -423,6 +422,121 @@
             addToLog('SENT', message);
         }
 
+        function generateRandomWebSocketLog() {
+            const wsEvents = [
+                {
+                    type: 'connection',
+                    event: 'open',
+                    url: 'wss://api.example.com/agent-assist',
+                    readyState: 1,
+                    protocol: '',
+                    timestamp: new Date().toISOString()
+                },
+                {
+                    type: 'message',
+                    data: {
+                        action: 'subscribe',
+                        channel: 'agent_assist',
+                        payload: {
+                            agentId: currentCallData?.agentDetailsAO?.soeId || 'SOE12345',
+                            sessionId: currentCallData?.callDetailsAO?.ucid || 'session_' + Date.now()
+                        }
+                    },
+                    timestamp: new Date().toISOString()
+                },
+                {
+                    type: 'message',
+                    data: {
+                        action: 'sentiment_analysis',
+                        payload: {
+                            sentiment: 'neutral',
+                            confidence: 0.78,
+                            keywords: ['balance', 'account', 'help']
+                        }
+                    },
+                    timestamp: new Date().toISOString()
+                },
+                {
+                    type: 'message',
+                    data: {
+                        action: 'transcript_update',
+                        payload: {
+                            speaker: 'customer',
+                            text: 'I need help with my account balance',
+                            timestamp: new Date().toISOString()
+                        }
+                    },
+                    timestamp: new Date().toISOString()
+                },
+                {
+                    type: 'message',
+                    data: {
+                        action: 'suggestion_generated',
+                        payload: {
+                            suggestions: [
+                                'I can help you check your account balance',
+                                'Your current balance is $1,234.56',
+                                'Would you like to see recent transactions?'
+                            ],
+                            confidence: 0.92,
+                            context: 'balance_inquiry'
+                        }
+                    },
+                    timestamp: new Date().toISOString()
+                },
+                {
+                    type: 'message',
+                    data: {
+                        action: 'knowledge_base_search',
+                        payload: {
+                            query: 'account balance inquiry process',
+                            results: 3,
+                            topResult: {
+                                title: 'How to Check Account Balance',
+                                score: 0.95,
+                                snippet: 'To check account balance, verify customer identity first...'
+                            }
+                        }
+                    },
+                    timestamp: new Date().toISOString()
+                },
+                {
+                    type: 'ping',
+                    timestamp: new Date().toISOString()
+                },
+                {
+                    type: 'pong',
+                    latency: Math.floor(Math.random() * 50) + 10,
+                    timestamp: new Date().toISOString()
+                },
+                {
+                    type: 'error',
+                    code: 1006,
+                    reason: 'Connection lost',
+                    wasClean: false,
+                    timestamp: new Date().toISOString()
+                },
+                {
+                    type: 'close',
+                    code: 1000,
+                    reason: 'Normal closure',
+                    wasClean: true,
+                    timestamp: new Date().toISOString()
+                }
+            ];
+
+            const randomEvent = wsEvents[Math.floor(Math.random() * wsEvents.length)];
+            const requestType = ['open', 'close', 'error'].includes(randomEvent.type) 
+                ? 'received' 
+                : Math.random() > 0.5 ? 'sent' : 'received';
+
+            return {
+                eventName: 'WebsocketRequestLog',
+                eventObject: randomEvent,
+                requestType: requestType
+            };
+        }
+
         function sendTestMessage(type) {
             const messages = {
                 'CHILD_READY': {
@@ -444,7 +558,8 @@
                     error: 'Test error message',
                     code: 'TEST_ERROR',
                     timestamp: new Date().toISOString()
-                }
+                },
+                'WEBSOCKET_LOG': generateRandomWebSocketLog()
             };
 
             sendMessage(messages[type]);
@@ -458,7 +573,7 @@
             const typeColor = direction === 'RECEIVED' ? '#008000' : '#0066cc';
             
             entry.innerHTML = `
-                <div class="message-type" style="color: ${typeColor}">${direction}: ${data.type || 'Unknown'}</div>
+                <div class="message-type" style="color: ${typeColor}">${direction}: ${data.type || data.eventName || 'Unknown'}</div>
                 <div class="message-time">${new Date().toLocaleTimeString()}</div>
                 <div class="message-content">${JSON.stringify(data, null, 2)}</div>
             `;
@@ -479,7 +594,20 @@
         }
 
         // Initialize the app on load
-        initializeApp();
+        window.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            
+            // Add initial system message
+            const log = document.getElementById('messageLog');
+            const entry = document.createElement('div');
+            entry.className = 'message-entry';
+            entry.innerHTML = `
+                <div class="message-type">SYSTEM</div>
+                <div class="message-time">${new Date().toLocaleTimeString()}</div>
+                <div class="message-content">Mock child app initialized. Waiting for messages...</div>
+            `;
+            log.appendChild(entry);
+        });
     </script>
 </body>
 </html>
