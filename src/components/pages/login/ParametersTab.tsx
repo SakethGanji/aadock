@@ -1,9 +1,10 @@
-import React, { useCallback } from 'react'
+import React, { useCallback, useState, useEffect } from 'react'
 import { Button } from "../../ui/button"
 import { Label } from "../../ui/label"
 import { FileText, Copy, RotateCcw, Check } from "lucide-react"
 import CodeMirror from '@uiw/react-codemirror'
 import { json } from '@codemirror/lang-json'
+import { oneDark } from '@codemirror/theme-one-dark'
 import type { LoginState, LoginAction } from './login-reducer'
 import { PARENT_PROFILES } from './login-constants'
 import { CALL_TEMPLATES } from '../../../../data/call-templates'
@@ -14,6 +15,22 @@ interface ParametersTabProps {
 }
 
 export const ParametersTab = React.memo(function ParametersTab({ state, dispatch }: ParametersTabProps) {
+  const [isDarkMode, setIsDarkMode] = useState(false)
+
+  // Detect dark mode
+  useEffect(() => {
+    const checkDarkMode = () => {
+      setIsDarkMode(document.documentElement.classList.contains('dark'))
+    }
+    
+    checkDarkMode()
+    
+    // Observer for class changes on html element
+    const observer = new MutationObserver(checkDarkMode)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    
+    return () => observer.disconnect()
+  }, [])
   const { config, jsonText, jsonError } = state
   const selectedProfile = PARENT_PROFILES.find((p) => p.id === config.parentProfile)
 
@@ -206,10 +223,10 @@ export const ParametersTab = React.memo(function ParametersTab({ state, dispatch
                 </p>
               </div>
               {hasCustomerDetailsBeenEdited() && (
-                <div className="p-3 bg-yellow-50/50 border border-yellow-500/20 rounded-md">
+                <div className="p-3 bg-amber-50/50 dark:bg-amber-950/20 border border-amber-500/20 dark:border-amber-500/20 rounded-md">
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm text-yellow-700 dark:text-yellow-500 flex items-start gap-2">
-                      <span className="text-yellow-600 dark:text-yellow-500 mt-0.5">⚠️</span>
+                    <p className="text-sm text-amber-700 dark:text-amber-400 flex items-start gap-2">
+                      <span className="text-amber-600 dark:text-amber-400 mt-0.5">⚠️</span>
                       <span>
                         Warning: customerDetailsAO has been manually edited and no longer matches the selected account. 
                         Changes to these fields will be preserved, but may cause inconsistencies.
@@ -238,7 +255,7 @@ export const ParametersTab = React.memo(function ParametersTab({ state, dispatch
                 <CodeMirror
                   value={jsonText || JSON.stringify(config.startCallParams, null, 2)}
                   height="400px"
-                  theme={undefined} // Use default light theme
+                  theme={isDarkMode ? oneDark : undefined}
                   extensions={[json()]}
                   onChange={(value) => {
                     dispatch({ type: 'UPDATE_JSON_TEXT', payload: value })
@@ -276,19 +293,19 @@ export const ParametersTab = React.memo(function ParametersTab({ state, dispatch
             <div className="flex items-center justify-between mt-2">
               <div className="flex items-center gap-3">
                 {!jsonError && jsonText && hasChanges() && (
-                  <div className="flex items-center gap-1 text-xs text-yellow-600 dark:text-yellow-500">
-                    <span className="inline-block w-2 h-2 bg-yellow-500 dark:bg-yellow-400 rounded-full"></span>
+                  <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
+                    <span className="inline-block w-2 h-2 bg-amber-500 dark:bg-amber-400 rounded-full"></span>
                     Unsaved changes
                   </div>
                 )}
                 {!jsonError && jsonText && !hasChanges() && (
-                  <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-500">
+                  <div className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
                     <Check className="w-3 h-3" />
                     Saved
                   </div>
                 )}
                 {hasCustomerDetailsBeenEdited() && (
-                  <div className="flex items-center gap-1 text-xs text-yellow-600 dark:text-yellow-500">
+                  <div className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400">
                     <span>⚠️</span>
                     <span>Customer details modified</span>
                   </div>

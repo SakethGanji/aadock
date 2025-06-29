@@ -39,9 +39,9 @@ export const AddAccountForm = React.memo(function AddAccountForm({ existingField
     <div className="space-y-4">
       <div className="space-y-3">
         <Label className="text-sm font-medium">Select fields to include:</Label>
-        <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border border-gray-200 rounded">
+        <div className="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 border border-border rounded">
           {existingFields.map(field => (
-            <label key={field} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 p-1 rounded">
+            <label key={field} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted p-1 rounded">
               <Checkbox
                 checked={fieldInputs[field] || false}
                 onCheckedChange={() => handleFieldToggle(field)}

@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card"
 import { Button } from "../../ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../../ui/select"
@@ -6,9 +6,10 @@ import { Label } from "../../ui/label"
 import { Input } from "../../ui/input"
 import { Checkbox } from "../../ui/checkbox"
 import { Switch } from "../../ui/switch"
-import { Settings, FileText, CreditCard, Eye, EyeOff, Trash2, Code, Search, Check, Plus, X, RotateCcw, Copy } from "lucide-react"
+import { Settings, FileText, CreditCard, Eye, EyeOff, Trash2, Code, Search, Check, Plus, X, RotateCcw, Copy, Play } from "lucide-react"
 import CodeMirror from '@uiw/react-codemirror'
 import { json } from '@codemirror/lang-json'
+import { oneDark } from '@codemirror/theme-one-dark'
 import type { LoginConfig, AccountTemplate } from '../../../../types/auth'
 import { useLoginConfig } from './useLoginConfig'
 import { PARENT_PROFILES, ENVIRONMENTS } from './login-constants'
@@ -23,9 +24,25 @@ interface LoginPageProps {
 export default function LoginPage({ onLogin }: LoginPageProps) {
   const [state, dispatch] = useLoginConfig()
   const { config, saveCredentials, saveDefaultAccount, useIframe, useWebsocket } = state
+  const [isDarkMode, setIsDarkMode] = useState(false)
   
   const selectedProfile = PARENT_PROFILES.find((p) => p.id === config.parentProfile)
   const selectedEnvironment = ENVIRONMENTS.find((e) => e.id === config.environment)
+
+  // Detect dark mode
+  useEffect(() => {
+    const checkDarkMode = () => {
+      setIsDarkMode(document.documentElement.classList.contains('dark'))
+    }
+    
+    checkDarkMode()
+    
+    // Observer for class changes on html element
+    const observer = new MutationObserver(checkDarkMode)
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] })
+    
+    return () => observer.disconnect()
+  }, [])
 
   const handleLogin = useCallback(() => {
     // Save credentials if checkbox is checked
@@ -231,10 +248,10 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
       <div className="w-full max-w-6xl">
-        <Card className="border-gray-200 shadow-none">
+        <Card className="border-border shadow-none">
           <CardContent className="space-y-6">
             {/* Top Section with Profile, Environment, and Start Button */}
-            <div className="bg-gray-50 -mx-6 -mt-6 px-6 py-4 border-b rounded-t-lg">
+            <div className="bg-muted -mx-6 -mt-6 px-6 py-4 border-b rounded-t-lg">
               <div className="flex items-end gap-4">
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
@@ -249,10 +266,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                       <SelectContent>
                         {PARENT_PROFILES.map((profile) => (
                           <SelectItem key={profile.id} value={profile.id}>
-                            <div className="flex items-center gap-2">
-                              <div className={`w-2 h-2 rounded-full ${profile.color}`} />
-                              {profile.name}
-                            </div>
+                            {profile.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -277,7 +291,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                       </SelectContent>
                     </Select>
                     {selectedEnvironment && (
-                      <p className="text-xs text-gray-500">{selectedEnvironment.url}</p>
+                      <p className="text-xs text-muted-foreground">{selectedEnvironment.url}</p>
                     )}
                   </div>
                 </div>
@@ -288,7 +302,8 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                   className="px-6 mb-2"
                   title={!config.selectedAccounts || config.selectedAccounts.length === 0 ? "Please select an account" : ""}
                 >
-                  Start Testing
+                  <Play className="w-4 h-4 mr-2" />
+                  Start
                 </Button>
               </div>
               
@@ -299,7 +314,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
               {/* Left Column: Account Selection + Authentication */}
               <div className="space-y-6">
                 {/* Account Selection Section */}
-                <Card className="border-gray-200 shadow-none">
+                <Card className="border-border shadow-none">
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg flex items-center gap-2">
@@ -330,12 +345,12 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                             onChange={(e) => dispatch({ type: 'SET_UI_STATE', payload: { field: 'accountSearch', value: e.target.value } })}
                             className="pl-8 h-9"
                           />
-                          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-400" />
+                          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                         </div>
 
                         {/* Add Account Form */}
                         {state.showAddAccount && (
-                          <div className="p-3 border border-dashed border-gray-300 rounded-lg">
+                          <div className="p-3 border border-dashed border-border rounded-lg">
                             <AddAccountForm
                               existingFields={Object.keys(accounts.allAccounts[0] || {})}
                               onSave={handleAddAccount}
@@ -345,9 +360,9 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                         )}
 
                         {/* Compact account list */}
-                        <div className="border border-gray-200 rounded-lg overflow-hidden max-h-64 overflow-y-auto">
+                        <div className="border border-border rounded-lg overflow-hidden max-h-64 overflow-y-auto">
                           {filteredAccounts.length > 0 ? (
-                            <div className="divide-y divide-gray-200">
+                            <div className="divide-y divide-border">
                               {filteredAccounts.slice(0, 5).map((account, index) => {
                                 const isSelected = config.selectedAccounts?.some(
                                   (a: AccountTemplate) => JSON.stringify(a) === JSON.stringify(account)
@@ -372,14 +387,14 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                                               <Check className="w-2.5 h-2.5 text-white" />
                                             </div>
                                           )}
-                                          <span className="text-sm font-medium text-gray-900 truncate">
+                                          <span className="text-sm font-medium text-foreground truncate">
                                             {account.accountName || account.accountNumber || `Account ${index + 1}`}
                                           </span>
                                         </div>
-                                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-gray-600">
+                                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
                                           {Object.entries(account).slice(0, 4).map(([key, value]) => (
                                             <div key={key} className="truncate">
-                                              <span className="text-gray-500">{formatKey(key)}:</span> {String(value)}
+                                              <span className="text-muted-foreground">{formatKey(key)}:</span> {String(value)}
                                             </div>
                                           ))}
                                         </div>
@@ -389,8 +404,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                                           e.stopPropagation()
                                           handleRemoveAccount(isCustomAccount, index, account)
                                         }}
-                                        className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-600 ml-2"
-                                      >
+                                        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive ml-2">
                                         <X className="w-4 h-4" />
                                       </button>
                                     </div>
@@ -399,7 +413,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                               })}
                             </div>
                           ) : (
-                            <div className="text-center py-4 text-gray-500 text-sm">
+                            <div className="text-center py-4 text-muted-foreground text-sm">
                               No accounts found
                             </div>
                           )}
@@ -422,13 +436,13 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                               checked={state.saveDefaultAccount}
                               onCheckedChange={(checked: boolean) => dispatch({ type: 'SET_UI_STATE', payload: { field: 'saveDefaultAccount', value: checked } })}
                             />
-                            <span className="text-gray-700">Set as default account</span>
+                            <span className="text-foreground">Set as default account</span>
                           </label>
                         )}
                       </div>
                     ) : (
-                      <div className="text-center py-8 text-gray-500">
-                        <CreditCard className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                      <div className="text-center py-8 text-muted-foreground">
+                        <CreditCard className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                         <p className="text-sm">Select Parent Profile and Environment first</p>
                       </div>
                     )}
@@ -436,7 +450,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                 </Card>
 
                 {/* Authentication Section */}
-                <Card className="border-gray-200 shadow-none">
+                <Card className="border-border shadow-none">
                   <CardHeader className="pb-4">
                     <CardTitle className="text-lg flex items-center gap-2">
                       <Settings className="w-5 h-5" />
@@ -490,7 +504,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                             dispatch({ type: 'SET_UI_STATE', payload: { field: 'saveCredentials', value: checked } })
                           }
                         />
-                        <span className="text-sm text-gray-700">Save credentials</span>
+                        <span className="text-sm text-foreground">Save credentials</span>
                       </label>
                       {state.saveCredentials && config.environment && (
                         <Button
@@ -501,8 +515,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                             dispatch({ type: 'SET_CREDENTIALS', payload: { username: "", password: "" } })
                             dispatch({ type: 'SET_UI_STATE', payload: { field: 'saveCredentials', value: false } })
                           }}
-                          className="text-red-600 hover:text-red-700"
-                        >
+                          className="text-destructive hover:text-destructive">
                           <Trash2 className="w-4 h-4 mr-1" />
                           Reset
                         </Button>
@@ -514,7 +527,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
               </div>
 
               {/* Right Column: Call Parameters */}
-              <Card className="border-gray-200 shadow-none">
+              <Card className="border-border shadow-none">
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg flex items-center gap-2">
@@ -539,7 +552,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                 <CardContent>
                   {config.parentProfile ? (
                     <div className="space-y-3">
-                      <div className="p-2 bg-gray-50 border border-gray-200 rounded text-sm text-gray-700">
+                      <div className="p-2 bg-muted border border-border rounded text-sm text-foreground">
                         {selectedProfile?.name || config.parentProfile} START_CALL Template
                       </div>
 
@@ -553,12 +566,12 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                         <Label className="text-sm">START_CALL Parameters (JSON)</Label>
                         <div className="relative">
                           <div className={`border rounded-md overflow-hidden ${
-                            state.jsonError ? 'border-red-500' : 'border-gray-200'
+                            state.jsonError ? 'border-destructive' : 'border-border'
                           }`}>
                             <CodeMirror
                               value={state.jsonText || JSON.stringify(config.startCallParams, null, 2)}
                               height="450px"
-                              theme={undefined}
+                              theme={isDarkMode ? oneDark : undefined}
                               extensions={[json()]}
                               onChange={(value) => {
                                 dispatch({ type: 'UPDATE_JSON_TEXT', payload: value })
@@ -586,8 +599,8 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                             />
                           </div>
                           {state.jsonError && (
-                            <div className="absolute -bottom-5 left-0 flex items-center gap-1 text-xs text-red-600">
-                              <span className="inline-block w-2 h-2 bg-red-500 rounded-full"></span>
+                            <div className="absolute -bottom-5 left-0 flex items-center gap-1 text-xs text-destructive">
+                              <span className="inline-block w-2 h-2 bg-destructive rounded-full"></span>
                               {state.jsonError}
                             </div>
                           )}
@@ -605,8 +618,8 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                       </div>
                     </div>
                   ) : (
-                    <div className="text-center py-16 text-gray-500">
-                      <FileText className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+                    <div className="text-center py-16 text-muted-foreground">
+                      <FileText className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
                       <p className="text-sm">Select a Parent Profile first</p>
                     </div>
                   )}
@@ -616,7 +629,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
 
             {/* Developer Mode Section */}
             <div className="mt-6">
-                <Card className="border-gray-200 shadow-none">
+                <Card className="border-border shadow-none">
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg flex items-center gap-2">
@@ -660,7 +673,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                                 dispatch({ type: 'SET_FIELD', payload: { field: 'localhostIframeUrl', value: e.target.value } })
                               }
                             />
-                            <p className="text-xs text-gray-500">URL for iframe-based agent assist</p>
+                            <p className="text-xs text-muted-foreground">URL for iframe-based agent assist</p>
                           </div>
                         )}
                         
@@ -684,7 +697,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                                 dispatch({ type: 'SET_FIELD', payload: { field: 'localhostWebsocketUrl', value: e.target.value } })
                               }
                             />
-                            <p className="text-xs text-gray-500">WebSocket endpoint for direct communication</p>
+                            <p className="text-xs text-muted-foreground">WebSocket endpoint for direct communication</p>
                           </div>
                         )}
                       </div>

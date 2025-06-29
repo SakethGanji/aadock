@@ -46,7 +46,7 @@ const PARENT_PROFILES: ParentProfile[] = [
 export default function App() {
     const [isLoggedIn, setIsLoggedIn] = useState(false)
     const [loginConfig, setLoginConfig] = useState<LoginConfig | null>(null)
-    const [activeTab, setActiveTab] = useState<TabType>("gallery")
+    const [activeTab, setActiveTab] = useState<TabType>("tester")
 
     const handleLogin = (config: LoginConfig) => {
         setLoginConfig(config)

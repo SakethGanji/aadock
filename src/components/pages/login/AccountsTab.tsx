@@ -148,8 +148,7 @@ export const AccountsTab = React.memo(function AccountsTab({ state, dispatch }: 
       </div>
 
       {config.parentProfile && config.environment && (
-        <div className="p-3 bg-muted border border-border rounded-md flex items-center gap-2">
-          <div className={`w-2 h-2 rounded-full ${selectedProfile?.color || 'bg-muted-foreground'}`} />
+        <div className="p-3 bg-muted border border-border rounded-md">
           <span className="text-sm font-medium text-foreground/80">
             {selectedProfile?.name || config.parentProfile} - {selectedEnvironment?.name || config.environment} Accounts
           </span>
@@ -262,7 +261,7 @@ export const AccountsTab = React.memo(function AccountsTab({ state, dispatch }: 
                         >
                           {isSelected && (
                             <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
-                              <Check className="w-3 h-3 text-white" />
+                              <Check className="w-3 h-3 text-primary-foreground" />
                             </div>
                           )}
                         </td>
@@ -333,8 +332,8 @@ export const AccountsTab = React.memo(function AccountsTab({ state, dispatch }: 
 
       {config.selectedAccounts && config.selectedAccounts.length > 0 && (
         <div className="mt-4 space-y-2">
-          <div className="p-3 bg-green-50/50 border border-green-500/20 rounded-md">
-            <p className="text-sm text-green-700 dark:text-green-500 flex items-center gap-2">
+          <div className="p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-md">
+            <p className="text-sm text-emerald-600 dark:text-emerald-400 flex items-center gap-2">
               <Check className="w-4 h-4" />
               Account selected
             </p>
@@ -350,8 +349,8 @@ export const AccountsTab = React.memo(function AccountsTab({ state, dispatch }: 
       )}
       
       {(!config.selectedAccounts || config.selectedAccounts.length === 0) && config.parentProfile && config.environment && (
-        <div className="mt-4 p-3 bg-yellow-50/50 border border-yellow-500/20 rounded-md">
-          <p className="text-sm text-yellow-700 dark:text-yellow-500">
+        <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 rounded-md">
+          <p className="text-sm text-amber-600 dark:text-amber-400">
             Please select an account to continue
           </p>
         </div>

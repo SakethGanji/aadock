@@ -1,5 +1,6 @@
 import { Button } from "@/components/ui/button"
-import { BookOpen, TestTube2, Route, LogOut } from "lucide-react"
+import { BookOpen, TestTube2, Route, LogOut, Moon, Sun } from "lucide-react"
+import { useState, useEffect } from "react"
 
 type TabType = "gallery" | "tester" | "routes"
 
@@ -11,6 +12,24 @@ interface NavbarProps {
 }
 
 export default function Navbar({ activeTab, onTabChange, isLoggedIn, onLogout }: NavbarProps) {
+  const [isDark, setIsDark] = useState(false)
+
+  useEffect(() => {
+    // Check if dark mode is already set
+    const isDarkMode = document.documentElement.classList.contains('dark')
+    setIsDark(isDarkMode)
+  }, [])
+
+  const toggleDarkMode = () => {
+    const newDarkMode = !isDark
+    setIsDark(newDarkMode)
+    if (newDarkMode) {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
+  }
+
   return (
     <div className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="border-b">
@@ -40,7 +59,7 @@ export default function Navbar({ activeTab, onTabChange, isLoggedIn, onLogout }:
               className="flex items-center gap-2"
             >
               <TestTube2 className="w-4 h-4" />
-              <span className="hidden sm:inline">Tester</span>
+              <span className="hidden sm:inline">Preview</span>
             </Button>
             
             <Button
@@ -50,22 +69,39 @@ export default function Navbar({ activeTab, onTabChange, isLoggedIn, onLogout }:
               className="flex items-center gap-2"
             >
               <Route className="w-4 h-4" />
-              <span className="hidden sm:inline">Custom Routes</span>
+              <span className="hidden sm:inline">Routes</span>
             </Button>
           </nav>
 
-            {/* Logout Button */}
-            {isLoggedIn && onLogout && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onLogout}
-              className="flex items-center gap-2"
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="hidden sm:inline">Logout</span>
-            </Button>
-            )}
+            {/* Right side buttons */}
+            <div className="flex items-center gap-2">
+              {/* Dark Mode Toggle */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleDarkMode}
+                className="w-9 h-9"
+              >
+                {isDark ? (
+                  <Sun className="w-4 h-4" />
+                ) : (
+                  <Moon className="w-4 h-4" />
+                )}
+              </Button>
+
+              {/* Logout Button */}
+              {isLoggedIn && onLogout && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onLogout}
+                  className="flex items-center gap-2"
+                >
+                  <LogOut className="w-4 h-4" />
+                  <span className="hidden sm:inline">Logout</span>
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </div>

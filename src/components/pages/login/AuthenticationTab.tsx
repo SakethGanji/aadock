@@ -172,8 +172,8 @@ export const AuthenticationTab = React.memo(function AuthenticationTab({ state, 
         
         {config.devMode && (
           <div className="space-y-4 animate-in slide-in-from-top-2">
-            <div className="p-3 bg-yellow-50/50 border border-yellow-500/20 rounded-md">
-              <p className="text-sm text-yellow-700 dark:text-yellow-500">
+            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-md">
+              <p className="text-sm text-amber-600 dark:text-amber-400">
                 Dev mode enables localhost connections for testing. Select one or both connection methods.
               </p>
             </div>
