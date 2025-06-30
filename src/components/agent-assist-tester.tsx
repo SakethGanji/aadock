@@ -353,7 +353,7 @@ export default function AgentAssistTester({ config, profile }: AgentAssistTester
     
     if (config.devMode && config.localhostIframeUrl) {
       const params = new URLSearchParams({
-        appName: 'aadesktop',
+        appName: 'aadesktopsim',
         cat1: config.token,
         desktopview: config.parentProfile.toLowerCase()
       })
@@ -368,7 +368,7 @@ export default function AgentAssistTester({ config, profile }: AgentAssistTester
     
     if (environment.url.includes('example.com')) {
       const params = new URLSearchParams({
-        appName: 'aadesktop',
+        appName: 'aadesktopsim',
         cat1: config.token,
         desktopview: config.parentProfile.toLowerCase()
       })
@@ -408,29 +408,41 @@ export default function AgentAssistTester({ config, profile }: AgentAssistTester
   const sendTranscriptMessage = useCallback((text: string, senderType: 'customer' | 'agent') => {
     if (!iframeRef.current?.contentWindow) return
     
-    const timestamp = new Date().toLocaleTimeString()
+    const timestamp = new Date().toLocaleTimeString('en-US', { 
+      hour: 'numeric', 
+      minute: '2-digit',
+      hour12: true 
+    }).toLowerCase()
     const timestampValue = Date.now()
-    const messageId = crypto.randomUUID()
+    const messageId = `ms-${crypto.randomUUID()}`
     
-    const transcriptMessage = {
-      eventName: senderType === 'customer' ? 'CUSTOMER_TRANSCRIPT' : 'AGENT_TRANSCRIPT',
+    // Only these two message formats, nothing else
+    const transcriptMessage = senderType === 'customer' ? {
+      // USER_TRANSCRIPT format (from customer) - has event field and data wrapper
+      event: 'USER_TRANSCRIPT',
       data: {
-        agentId: config.startCallParams.agentDetailsAO?.soeId || 'SOE12345',
-        customerId: '9430874843110687',
-        chatSessionId: '123',
         timestamp,
         timestampValue,
-        from: senderType === 'customer' ? 'customer' : 'user',
         msg: text,
-        type: senderType === 'customer' ? 'customer' : 'user',
+        from: 'user',
+        type: 'user',
         isFromSocket: false,
         messageId,
       }
+    } : {
+      // Agent message format - flat structure, no event field
+      timestamp,
+      timestampValue,
+      msg: text,
+      from: 'agent',
+      type: 'agent',
+      isFromSocket: false,
+      messageId,
     }
     
     iframeRef.current.contentWindow.postMessage(JSON.stringify(transcriptMessage), '*')
-    addLog("sent", transcriptMessage.eventName, transcriptMessage)
-  }, [config.startCallParams.agentDetailsAO?.soeId, addLog])
+    addLog("sent", senderType === 'customer' ? 'USER_TRANSCRIPT' : 'AGENT_MESSAGE', transcriptMessage)
+  }, [addLog])
 
   const handleSendEvent = useCallback(() => {
     try {
