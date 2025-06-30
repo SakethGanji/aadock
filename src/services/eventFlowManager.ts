@@ -17,28 +17,28 @@ export class EventFlowManager {
     this.iframeRef = iframeRef;
     this.token = token;
     this.boundHandleMessage = this.handleChildMessage.bind(this);
-    console.log('[EventFlowManager] Created for', lobType);
+    // Created EventFlowManager for lobType
   }
 
   // Initialize with auto-start capability
   initialize(startCallParams: any, autoStartCall: boolean = false) {
-    console.log('[EventFlowManager] Initializing:', this.lobType, '- Auto-start:', autoStartCall);
+    // Initializing EventFlowManager
     this.startCallParams = startCallParams;
     this.autoStartCall = autoStartCall;
     this.setupMessageListener();
     
     if (this.autoStartCall) {
       this.flowState = 'WAITING_FOR_CHILD_AUTO';
-      console.log('[EventFlowManager] Auto-start enabled, waiting for child message');
+      // Auto-start enabled, waiting for child message
     } else {
-      console.log('[EventFlowManager] Manual start mode, waiting for user action');
+      // Manual start mode, waiting for user action
     }
   }
   
   // Called when user clicks "Start Call" button (manual mode)
   async startCall(startCallParams?: any) {
     if (this.isCallActive) {
-      console.warn('Call already active');
+      // Call already active
       return;
     }
     
@@ -81,7 +81,7 @@ export class EventFlowManager {
       
       // Auto-start flow
       if (this.flowState === 'WAITING_FOR_CHILD_AUTO' && this.autoStartCall) {
-        console.log('[EventFlowManager] Auto-starting call for', this.lobType);
+        // Auto-starting call
         this.isCallActive = true;
         this.sendInitiateAA();
         this.flowState = 'READY';
@@ -159,7 +159,7 @@ export class EventFlowManager {
 
   updateStartCallParams(newParams: any) {
     this.startCallParams = newParams;
-    console.log('[EventFlowManager] Updated startCallParams with new customerDetailsAO');
+    // Updated startCallParams with new customerDetailsAO
   }
   
   endCall() {
@@ -174,24 +174,12 @@ export class EventFlowManager {
     window.dispatchEvent(new CustomEvent('callStatusChanged', { detail: { active: false } }));
   }
   
-  cleanup() {
-    this.endCall();
-  }
-
   sendMessage(message: any) {
     messageFlowLogger.logMessage('PARENT -> CHILD', message.eventName || message.type || 'Unknown', message);
     if (this.iframeRef.current?.contentWindow) {
       this.iframeRef.current.contentWindow.postMessage(message, '*');
     } else {
-      console.error('[EventFlowManager] Cannot send message - iframe not ready');
+      // Cannot send message - iframe not ready
     }
-  }
-
-  getCallActive(): boolean {
-    return this.isCallActive;
-  }
-
-  getFlowState(): string {
-    return this.flowState;
   }
 }

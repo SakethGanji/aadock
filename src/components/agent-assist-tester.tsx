@@ -4,7 +4,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import CodeMirror from '@uiw/react-codemirror'
 import { json } from '@codemirror/lang-json'
-import { oneDark } from '@codemirror/theme-one-dark'
+import { getCodeMirrorTheme } from '../config/codemirror'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
@@ -36,7 +36,7 @@ import {
   Upload,
   Trash2,
 } from "lucide-react"
-import type { LoginConfig, ParentProfile } from "../../types/auth"
+import type { LoginConfig, ParentProfile, AccountTemplate } from "../../types/auth"
 import { 
   CONVERSATIONS, 
   getUtterancesByIntent, 
@@ -46,7 +46,6 @@ import {
 } from "@/data/message-templates"
 import { ConversationUpload } from "./ConversationUpload"
 import { getAccountTemplates } from "../../data/account-templates"
-import type { AccountTemplate } from "../../types/auth"
 import { buildAgentAssistUrl } from "../services/iframeUrlBuilder"
 import { EventFlowManager } from "../services/eventFlowManager"
 import { ENVIRONMENTS } from "./pages/login/login-constants"
@@ -92,11 +91,11 @@ interface AgentAssistTesterProps {
   onLogout: () => void
 }
 
-export default function AgentAssistTester({ config, profile, onLogout: _onLogout }: AgentAssistTesterProps) {
+export default function AgentAssistTester({ config, profile }: AgentAssistTesterProps) {
   const [iframeSize, setIframeSize] = useState({ width: 320, height: 568 })
   const [selectedEvent, setSelectedEvent] = useState<string>("START_CALL")
   const [eventPayload, setEventPayload] = useState<string>(JSON.stringify(config.startCallParams, null, 2))
-  const [logs, setLogs] = useState<LogEntry[]>([])
+  const [, setLogs] = useState<LogEntry[]>([])
   const [websocketLogs, setWebsocketLogs] = useState<LogEntry[]>([])
   const [callActive, setCallActive] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(false)
@@ -111,7 +110,7 @@ export default function AgentAssistTester({ config, profile, onLogout: _onLogout
   const [selectedConversation, setSelectedConversation] = useState<string>("")
   const [selectedAccountNumber, setSelectedAccountNumber] = useState<string>("")
   const [availableAccounts, setAvailableAccounts] = useState<AccountTemplate[]>([])
-  const [customerDetailsEdited, setCustomerDetailsEdited] = useState(false)
+  const [, setCustomerDetailsEdited] = useState(false)
   const [conversationState, setConversationState] = useState<{
     isPlaying: boolean
     currentIndex: number
@@ -128,7 +127,7 @@ export default function AgentAssistTester({ config, profile, onLogout: _onLogout
       try {
         return JSON.parse(saved)
       } catch (error) {
-        console.error('Failed to parse saved conversations:', error)
+        // Failed to parse saved conversations
         return []
       }
     }
@@ -194,8 +193,25 @@ export default function AgentAssistTester({ config, profile, onLogout: _onLogout
     const environment = ENVIRONMENTS.find(e => e.id === config.environment)
     if (!environment || !config.token) return '/mock-child-app.html'
     
-    // For local development, always use mock child app with query params
-    if (environment.id === 'local' || environment.url.includes('example.com')) {
+    // Check if dev mode is enabled with iframe URL
+    if (config.devMode && config.localhostIframeUrl) {
+      const params = new URLSearchParams({
+        appName: 'aadesktop',
+        cat1: config.token,
+        desktopview: config.parentProfile.toLowerCase()
+      });
+      
+      // Add websocket URL if enabled
+      if (config.localhostWebsocketUrl) {
+        params.append('websocketUrl', config.localhostWebsocketUrl);
+      }
+      
+      const separator = config.localhostIframeUrl.includes('?') ? '&' : '?';
+      return `${config.localhostIframeUrl}${separator}${params.toString()}`
+    }
+    
+    // For development environments, use mock child app with query params
+    if (environment.url.includes('example.com')) {
       const params = new URLSearchParams({
         appName: 'aadesktop',
         cat1: config.token,
@@ -331,7 +347,7 @@ export default function AgentAssistTester({ config, profile, onLogout: _onLogout
         
         // Special handling for WebsocketRequestLog events - don't add to regular logs
         if (event.data.eventName === "WebsocketRequestLog") {
-          console.log('[Parent] Processing WebsocketRequestLog:', event.data);
+          // Processing WebsocketRequestLog
           // Add only to WebSocket logs with proper timestamp
           const wsLogEntry: LogEntry = {
             timestamp: new Date().toLocaleTimeString('en-US', { hour12: false }),
@@ -342,7 +358,7 @@ export default function AgentAssistTester({ config, profile, onLogout: _onLogout
             websocketEvent: event.data.eventObject
           }
           setWebsocketLogs((prev) => {
-            console.log('[Parent] WebSocket logs count:', prev.length + 1);
+            // WebSocket logs count increased
             return [...prev, wsLogEntry];
           })
         } else if (event.source === iframeRef.current?.contentWindow) {
@@ -403,7 +419,7 @@ export default function AgentAssistTester({ config, profile, onLogout: _onLogout
   useEffect(() => {
     if (flowManager && config.startCallParams) {
       flowManager.updateStartCallParams(config.startCallParams)
-      console.log('[AgentAssistTester] Updated flow manager with new startCallParams')
+      // Updated flow manager with new startCallParams
     }
   }, [config.startCallParams, flowManager])
 
@@ -1178,32 +1194,30 @@ export default function AgentAssistTester({ config, profile, onLogout: _onLogout
               </TabsContent>
 
               <TabsContent value="events" className="flex-1 overflow-hidden">
-                <div className="h-full flex flex-col">
-                  <div className="flex-1 overflow-y-auto">
-                    <div className="p-4 space-y-4">
-                      {/* Event Selection */}
-                      <div className="space-y-3">
-                        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                          <Terminal className="w-4 h-4" />
-                          <span>Event Type</span>
-                        </div>
-                        
-                        <Select value={selectedEvent} onValueChange={handleEventChange}>
-                          <SelectTrigger className="w-full h-9">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="START_CALL">START_CALL</SelectItem>
-                            <SelectItem value="SWITCH_ACCOUNT">SWITCH_ACCOUNT</SelectItem>
-                            <SelectItem value="END_CALL">END_CALL</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                <div className="h-full flex flex-col p-4">
+                  {/* Event Selection */}
+                  <div className="space-y-3 mb-4">
+                    <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                      <Terminal className="w-4 h-4" />
+                      <span>Event Type</span>
+                    </div>
+                    
+                    <Select value={selectedEvent} onValueChange={handleEventChange}>
+                      <SelectTrigger className="w-full h-9">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="START_CALL">START_CALL</SelectItem>
+                        <SelectItem value="SWITCH_ACCOUNT">SWITCH_ACCOUNT</SelectItem>
+                        <SelectItem value="END_CALL">END_CALL</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                      <div className="border-t pt-4" />
+                  <div className="border-t pt-4 mb-4" />
 
-                      {/* Payload Editor */}
-                      <div className="space-y-3">
+                  {/* Payload Editor */}
+                  <div className="flex-1 flex flex-col overflow-hidden">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
                             <FileText className="w-4 h-4" />
@@ -1219,11 +1233,11 @@ export default function AgentAssistTester({ config, profile, onLogout: _onLogout
                           </div>
                         </div>
 
-                        <div className="h-[300px] overflow-hidden rounded-md border bg-background">
+                        <div className="flex-1 overflow-hidden rounded-md border bg-background">
                       <CodeMirror
                         value={eventPayload}
                         onChange={(value) => setEventPayload(value)}
-                        theme={isDarkMode ? oneDark : undefined}
+                        theme={getCodeMirrorTheme(isDarkMode)}
                         extensions={[json()]}
                         basicSetup={{
                           lineNumbers: true,
@@ -1238,7 +1252,7 @@ export default function AgentAssistTester({ config, profile, onLogout: _onLogout
                           highlightSelectionMatches: false,
                           searchKeymap: false,
                         }}
-                        className="text-xs h-full"
+                        className="text-xs h-full overflow-y-auto"
                       />
                     </div>
                     
@@ -1248,9 +1262,7 @@ export default function AgentAssistTester({ config, profile, onLogout: _onLogout
                     </Button>
                   </div>
                 </div>
-              </div>
-            </div>
-          </TabsContent>
+              </TabsContent>
 
               <TabsContent value="logs" className="flex-1 overflow-hidden">
                 <div className="h-full flex flex-col">
@@ -1332,7 +1344,7 @@ export default function AgentAssistTester({ config, profile, onLogout: _onLogout
                                   <div className="rounded border overflow-hidden bg-muted/30">
                                     <CodeMirror
                                       value={JSON.stringify(log.websocketEvent || log.payload, null, 2)}
-                                      theme={isDarkMode ? oneDark : undefined}
+                                      theme={getCodeMirrorTheme(isDarkMode)}
                                       extensions={[json()]}
                                       editable={false}
                                       basicSetup={{

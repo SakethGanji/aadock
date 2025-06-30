@@ -65,8 +65,8 @@ export function ParametersTab({
   }, [onReset])
 
   return (
-    <Card className="border-border shadow-none h-full">
-      <CardHeader className="pb-4">
+    <Card className="border-border shadow-none flex flex-col" style={{ maxHeight: '550px' }}>
+      <CardHeader className="pb-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <FileText className="w-5 h-5" />
@@ -88,26 +88,26 @@ export function ParametersTab({
           </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 flex flex-col min-h-0 overflow-hidden">
         {config.parentProfile ? (
-          <div className="space-y-4">
+          <div className="flex flex-col h-full">
             {/* Account Selection Feedback */}
             {config.selectedAccounts && config.selectedAccounts.length > 0 && (
-              <div className="p-2 bg-primary/10 border border-primary/30 rounded text-sm text-primary">
+              <div className="p-2 bg-primary/10 border border-primary/30 rounded text-sm text-primary mb-4">
                 Account fields copied to customerDetailsAO
               </div>
             )}
             
             {/* JSON Editor */}
-            <div className="space-y-2">
-              <Label className="text-sm">START_CALL Parameters (JSON)</Label>
-              <div>
-                <div className={`border rounded-md overflow-hidden ${
+            <div className="flex flex-col flex-1 min-h-0">
+              <Label className="text-sm mb-2">START_CALL Parameters (JSON)</Label>
+              <div className="flex-1 min-h-0 overflow-hidden">
+                <div className={`border rounded-md h-full ${
                   jsonError ? 'border-destructive' : 'border-border'
                 }`}>
                   <CodeMirror
                     value={jsonText || JSON.stringify(config.startCallParams, null, 2)}
-                    height="320px"
+                    height="400px"
                     theme={getCodeMirrorTheme(isDarkMode)}
                     extensions={jsonExtensions}
                     onChange={(value) => {

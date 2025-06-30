@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button"
-import { BookOpen, TestTube2, Route, LogOut, Moon, Sun, Database } from "lucide-react"
+import { BookOpen, Monitor, Route, LogOut, Moon, Sun, Database } from "lucide-react"
 import { useState, useEffect } from "react"
 
 type TabType = "gallery" | "tester" | "routes" | "mongo"
@@ -77,7 +77,7 @@ export default function Navbar({ activeTab, onTabChange, isLoggedIn, onLogout }:
               onClick={() => onTabChange("tester")}
               className="flex items-center gap-2"
             >
-              <TestTube2 className="w-4 h-4" />
+              <Monitor className="w-4 h-4" />
               <span className="hidden sm:inline">Preview</span>
             </Button>
             

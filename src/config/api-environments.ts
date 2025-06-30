@@ -1,32 +1,55 @@
 export interface ApiEnvironment {
   name: string
   url: string
-  type: 'cluster' | 'apigee' | 'local'
+  type: 'dev' | 'uat' | 'perf' | 'local'
+  version?: string // API version for this environment
 }
 
 export const API_ENVIRONMENTS: ApiEnvironment[] = [
   {
-    name: 'Local Development',
-    url: 'http://localhost:3000/api',
-    type: 'local'
+    name: 'Dev1',
+    url: 'https://dev1.example.com/api',
+    type: 'dev',
+    version: 'v1'
   },
   {
-    name: 'Dev Cluster',
-    url: 'https://dev-cluster.example.com/api',
-    type: 'cluster'
+    name: 'Dev2',
+    url: 'https://dev2.example.com/api',
+    type: 'dev',
+    version: 'v1'
   },
   {
-    name: 'Staging Apigee',
-    url: 'https://staging-apigee.example.com/v1/api',
-    type: 'apigee'
+    name: 'Dev3',
+    url: 'https://dev3.example.com/api',
+    type: 'dev',
+    version: 'v1'
   },
   {
-    name: 'Production Apigee',
-    url: 'https://apigee.example.com/v1/api',
-    type: 'apigee'
+    name: 'UAT1',
+    url: 'https://uat1.example.com/api',
+    type: 'uat',
+    version: 'v1'
+  },
+  {
+    name: 'UAT2',
+    url: 'https://uat2.example.com/api',
+    type: 'uat',
+    version: 'v1'
+  },
+  {
+    name: 'UAT3',
+    url: 'https://uat3.example.com/api',
+    type: 'uat',
+    version: 'v1'
+  },
+  {
+    name: 'Performance',
+    url: 'https://perf.example.com/api',
+    type: 'perf',
+    version: 'v1'
   }
 ]
 
 export const getDefaultEnvironment = (): ApiEnvironment => {
-  return API_ENVIRONMENTS[0] // Always default to Local Development
+  return API_ENVIRONMENTS[0] // Default to Dev1
 }

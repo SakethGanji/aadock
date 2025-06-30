@@ -41,32 +41,30 @@ export default function App() {
             />
             
             {/* Main content */}
-            <div>
-                {activeTab === "gallery" && (
+            <div className="relative">
+                <div className={activeTab === "gallery" ? "block" : "hidden"}>
                     <Gallery />
-                )}
+                </div>
                 
-                {activeTab === "tester" && (
-                    <>
-                        {!isLoggedIn || !loginConfig ? (
-                            <LoginPage onLogin={handleLogin} />
-                        ) : (
-                            <AgentAssistTester 
-                                config={loginConfig} 
-                                profile={selectedProfile!} 
-                                onLogout={handleLogout} 
-                            />
-                        )}
-                    </>
-                )}
+                <div className={activeTab === "tester" ? "block" : "hidden"}>
+                    {!isLoggedIn || !loginConfig ? (
+                        <LoginPage onLogin={handleLogin} />
+                    ) : (
+                        <AgentAssistTester 
+                            config={loginConfig} 
+                            profile={selectedProfile!} 
+                            onLogout={handleLogout} 
+                        />
+                    )}
+                </div>
                 
-                {activeTab === "routes" && (
+                <div className={activeTab === "routes" ? "block" : "hidden"}>
                     <CustomRoutes />
-                )}
+                </div>
                 
-                {activeTab === "mongo" && (
+                <div className={activeTab === "mongo" ? "block" : "hidden"}>
                     <MongoPage />
-                )}
+                </div>
             </div>
         </div>
     )

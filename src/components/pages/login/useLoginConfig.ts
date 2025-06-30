@@ -28,6 +28,17 @@ export function useLoginConfig() {
         console.error("Failed to parse saved auto-gen config", error)
       }
     }
+    
+    // Load saved dev mode URLs
+    const savedIframeUrl = localStorage.getItem('aa-dev-iframe-url')
+    if (savedIframeUrl) {
+      dispatch({ type: 'SET_FIELD', payload: { field: 'localhostIframeUrl', value: savedIframeUrl } })
+    }
+    
+    const savedWebsocketUrl = localStorage.getItem('aa-dev-websocket-url')
+    if (savedWebsocketUrl) {
+      dispatch({ type: 'SET_FIELD', payload: { field: 'localhostWebsocketUrl', value: savedWebsocketUrl } })
+    }
   }, [])
 
   // Effect to load credentials from localStorage

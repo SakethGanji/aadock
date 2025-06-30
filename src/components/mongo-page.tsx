@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Search, Loader2, Database, FileJson, ArrowRight, Copy, Check, Settings } from 'lucide-react'
 import CodeMirror from '@uiw/react-codemirror'
 import { json } from '@codemirror/lang-json'
-import { oneDark } from '@codemirror/theme-one-dark'
+import { getCodeMirrorTheme } from '@/config/codemirror'
 import { mongoService } from '@/services/mongo-service'
 
 
@@ -91,7 +91,7 @@ export function MongoPage() {
       }
       updateCollectionResult(collectionId, result)
     } catch (error) {
-      console.error(`Error searching ${collectionId}:`, error)
+      // Error searching collection
       updateCollectionResult(collectionId, null)
     } finally {
       updateCollectionLoading(collectionId, false)
@@ -116,7 +116,7 @@ export function MongoPage() {
       setCopiedCollection(collectionName)
       setTimeout(() => setCopiedCollection(null), 2000)
     } catch (error) {
-      console.error('Failed to copy:', error)
+      // Failed to copy
     }
   }
 
@@ -166,7 +166,7 @@ export function MongoPage() {
           <CodeMirror
             value={JSON.stringify(data, null, 2)}
             height="100%"
-            theme={isDarkMode ? oneDark : undefined}
+            theme={getCodeMirrorTheme(isDarkMode)}
             extensions={[json()]}
             editable={false}
             basicSetup={{
@@ -310,12 +310,9 @@ export function MongoPage() {
                     <Card className="h-full border-0 shadow-lg bg-card/50 backdrop-blur overflow-hidden">
                       <CardHeader className="bg-gradient-to-br from-primary/5 to-transparent">
                         <div className="flex items-center gap-3">
-                          <div className="p-2 bg-primary/10 rounded-lg">
-                            {col.icon}
-                          </div>
+
                           <div>
                             <CardTitle className="text-lg">{col.name} Collection</CardTitle>
-                            <CardDescription className="text-sm">MongoDB document from {col.id}</CardDescription>
                           </div>
                         </div>
                       </CardHeader>

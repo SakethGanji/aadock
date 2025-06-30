@@ -1,5 +1,5 @@
 import { json } from '@codemirror/lang-json'
-import { oneDark } from '@codemirror/theme-one-dark'
+import { lightTheme, darkTheme } from './codemirror-theme'
 
 export const defaultCodeMirrorSetup = {
   lineNumbers: true,
@@ -16,6 +16,6 @@ export const defaultCodeMirrorSetup = {
 }
 
 export const getCodeMirrorTheme = (isDarkMode: boolean) => 
-  isDarkMode ? oneDark : undefined
+  isDarkMode ? darkTheme : lightTheme
 
 export const jsonExtensions = [json()]

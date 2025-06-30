@@ -17,7 +17,7 @@ import { useLoginConfig } from './useLoginConfig'
 import { PARENT_PROFILES, ENVIRONMENTS } from './login-constants'
 import { getAccountTemplates } from '../../../../data/account-templates'
 import { CALL_TEMPLATES } from '../../../../data/call-templates'
-import { AddAccountForm } from './AddAccountForm'
+import { AddAccountModal } from './AddAccountModal'
 import { ParametersTab } from './ParametersTab'
 import { TokenService } from '../../../services/tokenService'
 import { AUTO_GEN_FLAGS } from './auto-generation-config'
@@ -78,7 +78,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
           environment: config.environment
         }
       )
-      console.log('[Login] Token generated successfully')
+      // Token generated successfully
       
       // Pass token along with config
       onLogin({
@@ -86,7 +86,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
         token: tokenData.token
       })
     } catch (error) {
-      console.error('Failed to generate token:', error)
+      // Failed to generate token
       alert('Failed to generate authentication token. Please try again.')
     } finally {
       setIsGeneratingToken(false)
@@ -314,148 +314,9 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
             </div>
 
             {/* Main Content Layout - Dynamic 2 columns */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Left Column: Select Account + Authentication */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+              {/* Left Column: Authentication + Advanced Settings */}
               <div className="flex flex-col gap-6">
-                {/* Select Account */}
-                <Card className="border-border shadow-none flex-1">
-                  <CardHeader className="pb-4">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <CreditCard className="w-5 h-5" />
-                        Select Account
-                      </CardTitle>
-                      {config.parentProfile && config.environment && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => dispatch({ type: 'SET_UI_STATE', payload: { field: 'showAddAccount', value: !state.showAddAccount } })}
-                        >
-                          <Plus className="w-4 h-4 mr-1" />
-                          Add
-                        </Button>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {config.parentProfile && config.environment ? (
-                      <div className="space-y-3">
-                        {/* Search bar */}
-                        <div className="relative">
-                          <Input
-                            type="text"
-                            placeholder="Search accounts..."
-                            value={state.accountSearch}
-                            onChange={(e) => dispatch({ type: 'SET_UI_STATE', payload: { field: 'accountSearch', value: e.target.value } })}
-                            className="pl-8 h-9"
-                          />
-                          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                        </div>
-
-                        {/* Add Account Form */}
-                        {state.showAddAccount && (
-                          <div className="p-3 border border-dashed border-border rounded-lg">
-                            <AddAccountForm
-                              existingFields={Object.keys(accounts.allAccounts[0] || {})}
-                              onSave={handleAddAccount}
-                              onCancel={() => dispatch({ type: 'SET_UI_STATE', payload: { field: 'showAddAccount', value: false } })}
-                            />
-                          </div>
-                        )}
-
-                        {/* Compact account list */}
-                        <div className="border border-border rounded-lg overflow-hidden max-h-96 overflow-y-auto">
-                          {filteredAccounts.length > 0 ? (
-                            <div className="divide-y divide-border">
-                              {filteredAccounts.slice(0, state.showAllAccounts ? filteredAccounts.length : 6).map((account, index) => {
-                                const isSelected = config.selectedAccounts?.some(
-                                  (a: AccountTemplate) => JSON.stringify(a) === JSON.stringify(account)
-                                )
-                                const isCustomAccount = index >= accounts.visibleDefaultAccounts.length
-                                
-                                return (
-                                  <div
-                                    key={index}
-                                    className={`group p-3 cursor-pointer transition-all duration-200 ${
-                                      isSelected
-                                        ? "bg-primary/10 hover:bg-primary/15 border-l-2 border-primary"
-                                        : "hover:bg-muted/50"
-                                    }`}
-                                    onClick={() => handleAccountSelect(isSelected ? null : account)}
-                                  >
-                                    <div className="flex items-start justify-between">
-                                      <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-2">
-                                          {isSelected && (
-                                            <div className="w-4 h-4 bg-primary rounded-full flex items-center justify-center shrink-0">
-                                              <Check className="w-2.5 h-2.5 text-white" />
-                                            </div>
-                                          )}
-                                          <span className="text-sm font-medium text-foreground truncate">
-                                            {account.accountName || account.accountNumber || `Account ${index + 1}`}
-                                          </span>
-                                        </div>
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                                          {Object.entries(account).slice(0, 4).map(([key, value]) => (
-                                            <div key={key} className="truncate">
-                                              <span className="font-medium">{formatKey(key)}:</span> <span className="text-foreground">{String(value)}</span>
-                                            </div>
-                                          ))}
-                                        </div>
-                                      </div>
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation()
-                                          handleRemoveAccount(isCustomAccount, index, account)
-                                        }}
-                                        className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive ml-2 p-1 rounded hover:bg-destructive/10">
-                                        <X className="w-3 h-3" />
-                                      </button>
-                                    </div>
-                                  </div>
-                                )
-                              })}
-                            </div>
-                          ) : (
-                            <div className="text-center py-8 text-muted-foreground">
-                              <CreditCard className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                              <p className="text-sm">No accounts found</p>
-                            </div>
-                          )}
-                        </div>
-
-                        {filteredAccounts.length > 6 && !state.showAllAccounts && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => dispatch({ type: 'SET_UI_STATE', payload: { field: 'showAllAccounts', value: !state.showAllAccounts } })}
-                            className="w-full text-xs h-8"
-                          >
-                            Show all {filteredAccounts.length} accounts
-                          </Button>
-                        )}
-
-                        {config.selectedAccounts && config.selectedAccounts.length > 0 && (
-                          <div className="p-3 bg-primary/5 border border-primary/20 rounded-lg">
-                            <label className="flex items-center gap-2 cursor-pointer text-sm">
-                              <Checkbox
-                                checked={state.saveDefaultAccount}
-                                onCheckedChange={(checked: boolean) => dispatch({ type: 'SET_UI_STATE', payload: { field: 'saveDefaultAccount', value: checked } })}
-                              />
-                              <span className="text-primary font-medium">Set as default account</span>
-                            </label>
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-center py-12 text-muted-foreground">
-                        <CreditCard className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
-                        <p className="text-sm font-medium">Select Parent Profile and Environment first</p>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
                 {/* Authentication */}
                 <Card className="border-border shadow-none">
                   <CardHeader className="pb-3">
@@ -532,25 +393,8 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                     </div>
                   </CardContent>
                 </Card>
-              </div>
 
-              {/* Right Column: Call Parameters */}
-              <div className="flex flex-col">
-                <ParametersTab
-                  config={config}
-                  jsonText={state.jsonText}
-                  jsonError={state.jsonError}
-                  autoGenConfig={state.autoGenConfig}
-                  onParamsChange={handleParamsChange}
-                  onUpdateJsonText={(value) => dispatch({ type: 'UPDATE_JSON_TEXT', payload: value })}
-                  onReset={handleReset}
-                  dispatch={dispatch}
-                />
-              </div>
-            </div>
-
-            {/* Advanced Settings Section */}
-            <div>
+                {/* Advanced Settings - Moved here from bottom */}
                 <Card className="border-border shadow-none">
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
@@ -643,9 +487,16 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                               type="text"
                               placeholder="http://localhost:3001"
                               value={config.localhostIframeUrl || ""}
-                              onChange={(e) =>
-                                dispatch({ type: 'SET_FIELD', payload: { field: 'localhostIframeUrl', value: e.target.value } })
-                              }
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                dispatch({ type: 'SET_FIELD', payload: { field: 'localhostIframeUrl', value } });
+                                // Save to localStorage
+                                if (value) {
+                                  localStorage.setItem('aa-dev-iframe-url', value);
+                                } else {
+                                  localStorage.removeItem('aa-dev-iframe-url');
+                                }
+                              }}
                             />
                             <p className="text-xs text-muted-foreground">URL for iframe-based agent assist</p>
                           </div>
@@ -667,9 +518,16 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                               type="text"
                               placeholder="ws://localhost:8080"
                               value={config.localhostWebsocketUrl || ""}
-                              onChange={(e) =>
-                                dispatch({ type: 'SET_FIELD', payload: { field: 'localhostWebsocketUrl', value: e.target.value } })
-                              }
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                dispatch({ type: 'SET_FIELD', payload: { field: 'localhostWebsocketUrl', value } });
+                                // Save to localStorage
+                                if (value) {
+                                  localStorage.setItem('aa-dev-websocket-url', value);
+                                } else {
+                                  localStorage.removeItem('aa-dev-websocket-url');
+                                }
+                              }}
                             />
                             <p className="text-xs text-muted-foreground">WebSocket endpoint for direct communication</p>
                           </div>
@@ -685,10 +543,158 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                       </div>
                     )}
                     </div>
-
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Right Column: Call Parameters */}
+              <div className="flex flex-col">
+                <ParametersTab
+                  config={config}
+                  jsonText={state.jsonText}
+                  jsonError={state.jsonError}
+                  autoGenConfig={state.autoGenConfig}
+                  onParamsChange={handleParamsChange}
+                  onUpdateJsonText={(value) => dispatch({ type: 'UPDATE_JSON_TEXT', payload: value })}
+                  onReset={handleReset}
+                  dispatch={dispatch}
+                />
+              </div>
+            </div>
+
+            {/* Select Account Section - Table View */}
+            <Card className="border-border shadow-none mt-6">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <CreditCard className="w-5 h-5" />
+                    Select Account
+                  </CardTitle>
+                  <div className="flex items-center gap-3">
+                    {/* Search bar */}
+                    <div className="relative">
+                      <Input
+                        type="text"
+                        placeholder="Search accounts..."
+                        value={state.accountSearch}
+                        onChange={(e) => dispatch({ type: 'SET_UI_STATE', payload: { field: 'accountSearch', value: e.target.value } })}
+                        className="pl-8 h-9 w-64"
+                      />
+                      <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    </div>
+                    {config.parentProfile && config.environment && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => dispatch({ type: 'SET_UI_STATE', payload: { field: 'showAddAccount', value: !state.showAddAccount } })}
+                      >
+                        <Plus className="w-4 h-4 mr-1" />
+                        Add Account
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {config.parentProfile && config.environment ? (
+                  <div className="space-y-4">
+                    {/* Add Account Modal */}
+                    <AddAccountModal
+                      open={state.showAddAccount}
+                      onOpenChange={(open) => dispatch({ type: 'SET_UI_STATE', payload: { field: 'showAddAccount', value: open } })}
+                      existingFields={Object.keys(accounts.allAccounts[0] || {})}
+                      onSave={handleAddAccount}
+                    />
+
+                    {/* Table View */}
+                    {filteredAccounts.length > 0 ? (
+                      <div className="border rounded-lg overflow-hidden">
+                        <div className="overflow-x-auto">
+                          <table className="w-full">
+                            <thead className="bg-muted/50 border-b">
+                              <tr>
+                                <th className="text-left p-3 font-medium text-sm">Select</th>
+                                {accounts.allAccounts[0] && Object.keys(accounts.allAccounts[0]).map((key) => (
+                                  <th key={key} className="text-left p-3 font-medium text-sm">
+                                    {formatKey(key)}
+                                  </th>
+                                ))}
+                                <th className="text-left p-3 font-medium text-sm">Actions</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y">
+                              {filteredAccounts.map((account, index) => {
+                                const isSelected = config.selectedAccounts?.some(
+                                  (a: AccountTemplate) => JSON.stringify(a) === JSON.stringify(account)
+                                )
+                                const isCustomAccount = index >= accounts.visibleDefaultAccounts.length
+                                
+                                return (
+                                  <tr
+                                    key={index}
+                                    className={`hover:bg-muted/30 transition-colors cursor-pointer ${
+                                      isSelected ? "bg-primary/5" : ""
+                                    }`}
+                                    onClick={() => handleAccountSelect(isSelected ? null : account)}
+                                  >
+                                    <td className="p-3">
+                                      <div className="flex items-center">
+                                        <Checkbox
+                                          checked={isSelected}
+                                          onCheckedChange={() => handleAccountSelect(isSelected ? null : account)}
+                                          onClick={(e) => e.stopPropagation()}
+                                        />
+                                      </div>
+                                    </td>
+                                    {Object.entries(account).map(([key, value]) => (
+                                      <td key={key} className="p-3 text-sm">
+                                        {String(value)}
+                                      </td>
+                                    ))}
+                                    <td className="p-3">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation()
+                                          handleRemoveAccount(isCustomAccount, index, account)
+                                        }}
+                                        className="text-muted-foreground hover:text-destructive p-1 rounded hover:bg-destructive/10 transition-colors">
+                                        <X className="w-4 h-4" />
+                                      </button>
+                                    </td>
+                                  </tr>
+                                )
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="text-center py-12 text-muted-foreground border rounded-lg">
+                        <CreditCard className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                        <p className="text-sm">No accounts found</p>
+                      </div>
+                    )}
+
+                    {config.selectedAccounts && config.selectedAccounts.length > 0 && (
+                      <div className="flex justify-end">
+                        <label className="flex items-center gap-2 cursor-pointer p-3 bg-primary/5 border border-primary/20 rounded-lg">
+                          <Checkbox
+                            checked={state.saveDefaultAccount}
+                            onCheckedChange={(checked: boolean) => dispatch({ type: 'SET_UI_STATE', payload: { field: 'saveDefaultAccount', value: checked } })}
+                          />
+                          <span className="text-sm text-primary font-medium">Set as default account</span>
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <CreditCard className="w-10 h-10 text-muted-foreground mx-auto mb-3" />
+                    <p className="text-sm font-medium">Select Parent Profile and Environment first</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
           </CardContent>
         </Card>

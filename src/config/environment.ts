@@ -6,11 +6,11 @@ export interface EnvironmentConfig {
 export const getEnvironmentConfig = (envId: string): EnvironmentConfig => {
   // For now, always use mock auth since we're in development
   // When deploying to work, change this to check for specific environments
-  const isHomeComputer = true; // Change this to false when on work computer
+  const isMock = true; // Change this to false when on work computer
   
   return {
-    useMockAuth: isHomeComputer,
+    useMockAuth: isMock,
     // At work, replace with real token endpoints
-    tokenAPIOverride: isHomeComputer ? undefined : 'https://api.company.com/auth/token'
+    tokenAPIOverride: isMock ? undefined : 'https://api.company.com/auth/token'
   };
 };

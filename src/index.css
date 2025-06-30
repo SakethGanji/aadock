@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -23,19 +22,6 @@
   --border: #e5e7eb;
   --input: #e5e7eb;
   --ring: #4169E1;
-  --chart-1: #4169E1;
-  --chart-2: #5b7fe1;
-  --chart-3: #7693e1;
-  --chart-4: #91a7e1;
-  --chart-5: #2c4bb8;
-  --sidebar: #e6edff;
-  --sidebar-foreground: #1f2937;
-  --sidebar-primary: #4169E1;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e6edff;
-  --sidebar-accent-foreground: #4169E1;
-  --sidebar-border: #e5e7eb;
-  --sidebar-ring: #4169E1;
   --font-sans: DM Sans, sans-serif;
   --font-serif: Lora, serif;
   --font-mono: IBM Plex Mono, monospace;
@@ -70,19 +56,6 @@
   --border: #374151;
   --input: #374151;
   --ring: #5b7fe1;
-  --chart-1: #5b7fe1;
-  --chart-2: #7693e1;
-  --chart-3: #91a7e1;
-  --chart-4: #acbde1;
-  --chart-5: #4169E1;
-  --sidebar: #1a1f36;
-  --sidebar-foreground: #e5e7eb;
-  --sidebar-primary: #5b7fe1;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #2a3969;
-  --sidebar-accent-foreground: #5b7fe1;
-  --sidebar-border: #374151;
-  --sidebar-ring: #5b7fe1;
   --font-sans: DM Sans, sans-serif;
   --font-serif: Lora, serif;
   --font-mono: IBM Plex Mono, monospace;
@@ -117,19 +90,6 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
@@ -196,48 +156,4 @@
   }
 }
 
-/* MongoDB page animations */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateX(-20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes pulse-glow {
-  0%, 100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-/* Animation utilities */
-.animate-fade-in {
-  animation: fadeIn 0.5s ease-out;
-}
-
-.animate-slide-in {
-  animation: slideIn 0.4s ease-out;
-}
-
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
 
