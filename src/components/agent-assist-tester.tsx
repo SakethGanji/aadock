@@ -476,35 +476,31 @@ export default function AgentAssistTester({ config, profile }: AgentAssistTester
     const delay = currentMessage.delay || conversation.defaultDelay
 
     const timer = setTimeout(() => {
-      if (currentMessage.type === 'customer') {
-        sendMessage('CUSTOMER_MESSAGE', { message: currentMessage.text })
-      } else {
-        // Agent messages use AGENT_TRANSCRIPT format
-        const timestamp = new Date().toLocaleTimeString()
-        const timestampValue = Date.now()
-        const messageId = crypto.randomUUID()
-        
-        const transcriptMessage = {
-          eventName: 'AGENT_TRANSCRIPT',
-          data: {
-            agentId: config.startCallParams.agentDetailsA0?.soeId || 'SOE12345',
-            customerId: '9430874843110687',
-            chatSessionId: '123',
-            timestamp: timestamp,
-            timestampValue: timestampValue,
-            from: 'user',
-            msg: currentMessage.text,
-            type: 'user',
-            isFromSocket: false,
-            messageId: messageId,
-          }
+      // All messages use AGENT_TRANSCRIPT format
+      const timestamp = new Date().toLocaleTimeString()
+      const timestampValue = Date.now()
+      const messageId = crypto.randomUUID()
+      
+      const transcriptMessage = {
+        eventName: 'AGENT_TRANSCRIPT',
+        data: {
+          agentId: config.startCallParams.agentDetailsAO?.soeId || 'SOE12345',
+          customerId: '9430874843110687',
+          chatSessionId: '123',
+          timestamp: timestamp,
+          timestampValue: timestampValue,
+          from: currentMessage.type === 'customer' ? 'customer' : 'user',
+          msg: currentMessage.text,
+          type: currentMessage.type === 'customer' ? 'customer' : 'user',
+          isFromSocket: false,
+          messageId: messageId,
         }
-        
-        // Send directly to iframe
-        if (iframeRef.current?.contentWindow) {
-          iframeRef.current.contentWindow.postMessage(transcriptMessage, '*')
-          addLog("sent", "AGENT_TRANSCRIPT", transcriptMessage)
-        }
+      }
+      
+      // Send directly to iframe
+      if (iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(transcriptMessage, '*')
+        addLog("sent", "AGENT_TRANSCRIPT", transcriptMessage)
       }
 
       if (conversationState.currentIndex < conversation.messages.length - 1) {
