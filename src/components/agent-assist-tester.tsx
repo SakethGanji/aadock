@@ -536,35 +536,31 @@ export default function AgentAssistTester({ config, profile }: AgentAssistTester
   }
 
   const sendUtterance = (utterance: Utterance) => {
-    if (utterance.type === 'customer') {
-      sendMessage('CUSTOMER_MESSAGE', { message: utterance.text })
-    } else {
-      // Agent utterances use AGENT_TRANSCRIPT format
-      const timestamp = new Date().toLocaleTimeString()
-      const timestampValue = Date.now()
-      const messageId = crypto.randomUUID()
-      
-      const transcriptMessage = {
-        eventName: 'AGENT_TRANSCRIPT',
-        data: {
-          agentId: config.startCallParams.agentDetailsA0?.soeId || 'SOE12345',
-          customerId: '9430874843110687',
-          chatSessionId: '123',
-          timestamp: timestamp,
-          timestampValue: timestampValue,
-          from: 'user',
-          msg: utterance.text,
-          type: 'user',
-          isFromSocket: false,
-          messageId: messageId,
-        }
+    // All utterances use AGENT_TRANSCRIPT format
+    const timestamp = new Date().toLocaleTimeString()
+    const timestampValue = Date.now()
+    const messageId = crypto.randomUUID()
+    
+    const transcriptMessage = {
+      eventName: 'AGENT_TRANSCRIPT',
+      data: {
+        agentId: config.startCallParams.agentDetailsAO?.soeId || 'SOE12345',
+        customerId: '9430874843110687',
+        chatSessionId: '123',
+        timestamp: timestamp,
+        timestampValue: timestampValue,
+        from: utterance.type === 'customer' ? 'customer' : 'user',
+        msg: utterance.text,
+        type: utterance.type === 'customer' ? 'customer' : 'user',
+        isFromSocket: false,
+        messageId: messageId,
       }
-      
-      // Send directly to iframe
-      if (iframeRef.current?.contentWindow) {
-        iframeRef.current.contentWindow.postMessage(transcriptMessage, '*')
-        addLog("sent", "AGENT_TRANSCRIPT", transcriptMessage)
-      }
+    }
+    
+    // Send directly to iframe
+    if (iframeRef.current?.contentWindow) {
+      iframeRef.current.contentWindow.postMessage(transcriptMessage, '*')
+      addLog("sent", "AGENT_TRANSCRIPT", transcriptMessage)
     }
   }
 
@@ -864,7 +860,33 @@ export default function AgentAssistTester({ config, profile }: AgentAssistTester
                           disabled={!messageFlow.userMessage.trim()}
                           onClick={() => {
                             if (messageFlow.userMessage) {
-                              sendMessage("CUSTOMER_MESSAGE", { message: messageFlow.userMessage })
+                              // Send AGENT_TRANSCRIPT format for customer messages
+                              const timestamp = new Date().toLocaleTimeString()
+                              const timestampValue = Date.now()
+                              const messageId = crypto.randomUUID()
+                              
+                              const transcriptMessage = {
+                                eventName: 'AGENT_TRANSCRIPT',
+                                data: {
+                                  agentId: config.startCallParams.agentDetailsAO?.soeId || 'SOE12345',
+                                  customerId: '9430874843110687',
+                                  chatSessionId: '123',
+                                  timestamp: timestamp,
+                                  timestampValue: timestampValue,
+                                  from: 'customer',
+                                  msg: messageFlow.userMessage,
+                                  type: 'customer',
+                                  isFromSocket: false,
+                                  messageId: messageId,
+                                }
+                              }
+                              
+                              // Send directly to iframe
+                              if (iframeRef.current?.contentWindow) {
+                                iframeRef.current.contentWindow.postMessage(transcriptMessage, '*')
+                                addLog("sent", "AGENT_TRANSCRIPT", transcriptMessage)
+                              }
+                              
                               setMessageFlow({ ...messageFlow, userMessage: "" })
                             }
                           }}
