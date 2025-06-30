@@ -335,9 +335,11 @@ export default function AgentAssistTester({ config, profile }: AgentAssistTester
     return []
   })
   const [showUploadDialog, setShowUploadDialog] = useState(false)
+  const [isDesktop, setIsDesktop] = useState(true)
 
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [flowManager, setFlowManager] = useState<EventFlowManager | null>(null)
+  const isMountedRef = useRef(false)
   
   // Computed Values
   const allConversations = useMemo(() => [...CONVERSATIONS, ...customConversations], [customConversations])
@@ -347,7 +349,20 @@ export default function AgentAssistTester({ config, profile }: AgentAssistTester
     [config.autoStartCall, profile.defaultBehaviors.autoStartCall]
   )
 
+  const [iframeKey, setIframeKey] = useState(() => Date.now())
+  const [shouldLoadIframe, setShouldLoadIframe] = useState(false)
+  
+  // Delay iframe loading to prevent double mount in StrictMode
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShouldLoadIframe(true)
+    }, 50)
+    return () => clearTimeout(timer)
+  }, [])
+  
   const iframeSrc = useMemo(() => {
+    if (!shouldLoadIframe) return ''
+    
     const environment = ENVIRONMENTS.find(e => e.id === config.environment)
     if (!environment || !config.token) return '/mock-child-app.html'
     
@@ -376,7 +391,7 @@ export default function AgentAssistTester({ config, profile }: AgentAssistTester
     }
     
     return buildAgentAssistUrl(environment, config.token, config.parentProfile)
-  }, [config])
+  }, [config, shouldLoadIframe])
 
   // Callbacks
   const addLog = useCallback((
@@ -569,16 +584,16 @@ export default function AgentAssistTester({ config, profile }: AgentAssistTester
   }, [selectedAccountNumber, availableAccounts, config, flowManager, handleSendEvent])
 
   const reloadIframe = useCallback(() => {
-    if (iframeRef.current) {
-      iframeRef.current.src = iframeSrc
-      setCallActive(false)
-      addLog("sent", "IFRAME_RELOAD", {})
-      
-      if (flowManager) {
-        flowManager.endCall()
-      }
+    setCallActive(false)
+    addLog("sent", "IFRAME_RELOAD", {})
+    
+    if (flowManager) {
+      flowManager.endCall()
     }
-  }, [iframeSrc, flowManager, addLog])
+    
+    // Force iframe to reload by changing key
+    setIframeKey(prev => prev + 1)
+  }, [flowManager, addLog])
 
   const handleAddCustomConversation = useCallback((conversation: Conversation) => {
     setCustomConversations(prev => [...prev, conversation])
@@ -615,6 +630,17 @@ export default function AgentAssistTester({ config, profile }: AgentAssistTester
   useEffect(() => {
     localStorage.setItem('aa-custom-conversations', JSON.stringify(customConversations))
   }, [customConversations])
+
+  // Check for desktop/mobile layout
+  useEffect(() => {
+    const checkIsDesktop = () => {
+      setIsDesktop(window.matchMedia('(min-width: 768px)').matches)
+    }
+    
+    checkIsDesktop()
+    window.addEventListener('resize', checkIsDesktop)
+    return () => window.removeEventListener('resize', checkIsDesktop)
+  }, [])
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -665,22 +691,31 @@ export default function AgentAssistTester({ config, profile }: AgentAssistTester
   }, [])
   
   useEffect(() => {
-    if (iframeRef.current && config.token && !flowManager) {
-      const manager = new EventFlowManager(
-        config.parentProfile,
-        iframeRef,
-        config.token
-      )
-      
-      manager.initialize(config.startCallParams, autoStartEnabled)
-      setFlowManager(manager)
-      
-      return () => {
-        manager.endCall()
+    // Only initialize after iframe is loaded
+    if (!shouldLoadIframe || !iframeSrc) return
+    
+    // Use a timeout to ensure iframe is ready
+    const timeoutId = setTimeout(() => {
+      if (iframeRef.current && config.token) {
+        const manager = new EventFlowManager(
+          config.parentProfile,
+          iframeRef,
+          config.token
+        )
+        
+        manager.initialize(config.startCallParams, autoStartEnabled)
+        setFlowManager(manager)
+      }
+    }, 500) // Increased delay to ensure iframe is loaded
+    
+    return () => {
+      clearTimeout(timeoutId)
+      if (flowManager) {
+        flowManager.endCall()
         setFlowManager(null)
       }
     }
-  }, [config.token, config.parentProfile])
+  }, [config.token, config.parentProfile, autoStartEnabled, shouldLoadIframe, iframeSrc])
 
   useEffect(() => {
     if (flowManager && config.startCallParams) {
@@ -1295,12 +1330,15 @@ export default function AgentAssistTester({ config, profile }: AgentAssistTester
             className="border-2 border-border rounded-lg overflow-hidden bg-card shadow-lg"
             style={{ width: iframeSize.width, height: iframeSize.height }}
           >
-            <iframe
-              ref={iframeRef}
-              src={iframeSrc}
-              className="w-full h-full border-0"
-              title="Agent Assist"
-            />
+            {shouldLoadIframe && (
+              <iframe
+                key={iframeKey}
+                ref={iframeRef}
+                src={iframeSrc}
+                className="w-full h-full border-0"
+                title="Agent Assist"
+              />
+            )}
           </div>
         </div>
         <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 text-xs text-muted-foreground bg-background px-2 py-1 rounded">
@@ -1341,24 +1379,26 @@ export default function AgentAssistTester({ config, profile }: AgentAssistTester
 
       {/* Main Content */}
       <div className="flex-1 p-4 overflow-hidden">
-        {/* Desktop Layout */}
-        <div className="hidden md:block h-full">
-          <ResizablePanelGroup direction="horizontal" className="h-full rounded-lg">
-            <ResizablePanel defaultSize={30} minSize={20} maxSize={50}>
-              {renderControlPanel()}
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={70}>
-              {renderIframePanel()}
-            </ResizablePanel>
-          </ResizablePanelGroup>
-        </div>
-
-        {/* Mobile Layout */}
-        <div className="md:hidden h-full overflow-y-auto space-y-4">
-          {renderControlPanel()}
-          {renderIframePanel()}
-        </div>
+        {isDesktop ? (
+          /* Desktop Layout */
+          <div className="h-full">
+            <ResizablePanelGroup direction="horizontal" className="h-full rounded-lg">
+              <ResizablePanel defaultSize={30} minSize={20} maxSize={50}>
+                {renderControlPanel()}
+              </ResizablePanel>
+              <ResizableHandle withHandle />
+              <ResizablePanel defaultSize={70}>
+                {renderIframePanel()}
+              </ResizablePanel>
+            </ResizablePanelGroup>
+          </div>
+        ) : (
+          /* Mobile Layout */
+          <div className="h-full overflow-y-auto space-y-4">
+            {renderControlPanel()}
+            {renderIframePanel()}
+          </div>
+        )}
       </div>
     </div>
   )
