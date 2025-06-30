@@ -6,7 +6,7 @@ import { Label } from "../../ui/label"
 import { Input } from "../../ui/input"
 import { Checkbox } from "../../ui/checkbox"
 import { Switch } from "../../ui/switch"
-import { Settings, FileText, CreditCard, Eye, EyeOff, Trash2, Code, Search, Check, Plus, X, RotateCcw, Copy, Play } from "lucide-react"
+import { Settings, FileText, CreditCard, Eye, EyeOff, Trash2, Code, Search, Check, Plus, X, RotateCcw, Copy, Play, ChevronDown, ChevronRight } from "lucide-react"
 import CodeMirror from '@uiw/react-codemirror'
 import { defaultCodeMirrorSetup, getCodeMirrorTheme, jsonExtensions } from '../../../config/codemirror'
 import { useDarkMode } from '../../../hooks/useDarkMode'
@@ -20,6 +20,7 @@ import { CALL_TEMPLATES } from '../../../../data/call-templates'
 import { AddAccountForm } from './AddAccountForm'
 import { ParametersTab } from './ParametersTab'
 import { TokenService } from '../../../services/tokenService'
+import { AUTO_GEN_FLAGS } from './auto-generation-config'
 
 interface LoginPageProps {
   onLogin: (config: LoginConfig) => void
@@ -31,6 +32,11 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
   const isDarkMode = useDarkMode()
   const { copyToClipboard, isCopied } = useClipboard()
   const [isGeneratingToken, setIsGeneratingToken] = useState(false)
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    callBehavior: true,
+    autoGeneration: false,
+    developerMode: false
+  })
   
   const selectedProfile = PARENT_PROFILES.find((p) => p.id === config.parentProfile)
   const selectedEnvironment = ENVIRONMENTS.find((e) => e.id === config.environment)
@@ -40,15 +46,15 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
     
     try {
       // Save credentials if checkbox is checked
-      if (saveCredentials && config.environment) {
+      if (saveCredentials && config.parentProfile && config.environment) {
         const dataToSave = {
           username: config.username,
           password: config.password
         }
-        localStorage.setItem(`aa-credentials-${config.environment}`, JSON.stringify(dataToSave))
-      } else if (!saveCredentials && config.environment) {
+        localStorage.setItem(`aa-credentials-${config.parentProfile}-${config.environment}`, JSON.stringify(dataToSave))
+      } else if (!saveCredentials && config.parentProfile && config.environment) {
         // Remove saved credentials if checkbox is unchecked
-        localStorage.removeItem(`aa-credentials-${config.environment}`)
+        localStorage.removeItem(`aa-credentials-${config.parentProfile}-${config.environment}`)
       }
       
       // Save default account if checkbox is checked
@@ -292,39 +298,6 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                       <p className="text-xs text-muted-foreground">{selectedEnvironment.url}</p>
                     )}
                   </div>
-                  
-                  {/* Auto Start Call Toggle */}
-                  <div className="flex items-center justify-between py-3 border-t">
-                    <div className="space-y-0.5">
-                      <Label htmlFor="auto-start-call" className="text-sm font-medium cursor-pointer">
-                        Auto Start Call
-                      </Label>
-                      <p className="text-xs text-muted-foreground">
-                        {config.autoStartCall === undefined 
-                          ? `Uses ${selectedProfile?.name || 'profile'} default (${selectedProfile?.defaultBehaviors.autoStartCall ? 'enabled' : 'disabled'})`
-                          : config.autoStartCall ? 'Enabled - Call starts automatically' : 'Disabled - Manual start required'
-                        }
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-6 px-2 text-xs"
-                        onClick={() => dispatch({ type: 'SET_FIELD', payload: { field: 'autoStartCall', value: undefined } })}
-                        disabled={config.autoStartCall === undefined}
-                      >
-                        Use Default
-                      </Button>
-                      <Switch
-                        id="auto-start-call"
-                        checked={config.autoStartCall ?? selectedProfile?.defaultBehaviors.autoStartCall ?? false}
-                        onCheckedChange={(checked) => 
-                          dispatch({ type: 'SET_FIELD', payload: { field: 'autoStartCall', value: checked } })
-                        }
-                      />
-                    </div>
-                  </div>
                 </div>
                 
                 <Button 
@@ -340,11 +313,12 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
               
             </div>
 
-            {/* Consolidated Bento Box Layout */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[600px]">
-              {/* Left: Account Selection - Full height */}
-              <div className="h-full">
-                <Card className="border-border shadow-none h-full">
+            {/* Main Content Layout - Dynamic 2 columns */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Left Column: Select Account + Authentication */}
+              <div className="flex flex-col gap-6">
+                {/* Select Account */}
+                <Card className="border-border shadow-none flex-1">
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg flex items-center gap-2">
@@ -390,10 +364,10 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                         )}
 
                         {/* Compact account list */}
-                        <div className="border border-border rounded-lg overflow-hidden max-h-80 overflow-y-auto">
+                        <div className="border border-border rounded-lg overflow-hidden max-h-96 overflow-y-auto">
                           {filteredAccounts.length > 0 ? (
                             <div className="divide-y divide-border">
-                              {filteredAccounts.slice(0, 6).map((account, index) => {
+                              {filteredAccounts.slice(0, state.showAllAccounts ? filteredAccounts.length : 6).map((account, index) => {
                                 const isSelected = config.selectedAccounts?.some(
                                   (a: AccountTemplate) => JSON.stringify(a) === JSON.stringify(account)
                                 )
@@ -450,7 +424,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                           )}
                         </div>
 
-                        {filteredAccounts.length > 6 && (
+                        {filteredAccounts.length > 6 && !state.showAllAccounts && (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -482,131 +456,177 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                   </CardContent>
                 </Card>
 
+                {/* Authentication */}
+                <Card className="border-border shadow-none">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Settings className="w-5 h-5" />
+                      Authentication
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label htmlFor="username" className="text-sm font-medium">Username</Label>
+                        <Input
+                          id="username"
+                          type="text"
+                          placeholder="Enter username"
+                          value={config.username}
+                          onChange={(e) =>
+                            dispatch({ type: 'SET_FIELD', payload: { field: 'username', value: e.target.value } })
+                          }
+                          className="h-9"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="password" className="text-sm font-medium">Password</Label>
+                        <div className="relative">
+                          <Input
+                            id="password"
+                            type={state.showPassword ? "text" : "password"}
+                            placeholder="Enter password"
+                            className="pr-9 h-9"
+                            value={config.password}
+                            onChange={(e) =>
+                              dispatch({ type: 'SET_FIELD', payload: { field: 'password', value: e.target.value } })
+                            }
+                          />
+                          <button
+                            type="button"
+                            className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
+                            onClick={() => dispatch({ type: 'SET_UI_STATE', payload: { field: 'showPassword', value: !state.showPassword } })}
+                          >
+                            {state.showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <Checkbox
+                          checked={state.saveCredentials}
+                          onCheckedChange={(checked: boolean) => 
+                            dispatch({ type: 'SET_UI_STATE', payload: { field: 'saveCredentials', value: checked } })
+                          }
+                        />
+                        <span className="text-sm text-foreground">Save credentials</span>
+                      </label>
+                      
+                      {state.saveCredentials && config.parentProfile && config.environment && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            localStorage.removeItem(`aa-credentials-${config.parentProfile}-${config.environment}`)
+                            dispatch({ type: 'SET_CREDENTIALS', payload: { username: "", password: "" } })
+                            dispatch({ type: 'SET_UI_STATE', payload: { field: 'saveCredentials', value: false } })
+                          }}
+                          className="text-destructive hover:text-destructive border-destructive/20 hover:bg-destructive/10">
+                          <Trash2 className="w-4 h-4 mr-1" />
+                          Reset
+                        </Button>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
 
-              {/* Right Column: Call Parameters + Authentication */}
-              <div className="h-full flex flex-col gap-6">
-                {/* Call Parameters - Top Right */}
-                <div className="flex-1">
-                  <ParametersTab
-                    config={config}
-                    jsonText={state.jsonText}
-                    jsonError={state.jsonError}
-                    autoGenConfig={state.autoGenConfig}
-                    onParamsChange={handleParamsChange}
-                    onUpdateJsonText={(value) => dispatch({ type: 'UPDATE_JSON_TEXT', payload: value })}
-                    onReset={handleReset}
-                    dispatch={dispatch}
-                  />
-                </div>
-
-                {/* Authentication - Bottom Right */}
-                <div className="h-[200px]">
-                  <Card className="border-border shadow-none h-full">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <Settings className="w-5 h-5" />
-                        Authentication
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="space-y-2">
-                          <Label htmlFor="username" className="text-sm font-medium">Username</Label>
-                          <Input
-                            id="username"
-                            type="text"
-                            placeholder="Enter username"
-                            value={config.username}
-                            onChange={(e) =>
-                              dispatch({ type: 'SET_FIELD', payload: { field: 'username', value: e.target.value } })
-                            }
-                            className="h-9"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label htmlFor="password" className="text-sm font-medium">Password</Label>
-                          <div className="relative">
-                            <Input
-                              id="password"
-                              type={state.showPassword ? "text" : "password"}
-                              placeholder="Enter password"
-                              className="pr-9 h-9"
-                              value={config.password}
-                              onChange={(e) =>
-                                dispatch({ type: 'SET_FIELD', payload: { field: 'password', value: e.target.value } })
-                              }
-                            />
-                            <button
-                              type="button"
-                              className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground transition-colors"
-                              onClick={() => dispatch({ type: 'SET_UI_STATE', payload: { field: 'showPassword', value: !state.showPassword } })}
-                            >
-                              {state.showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center justify-between">
-                        <label className="flex items-center gap-2 cursor-pointer">
-                          <Checkbox
-                            checked={state.saveCredentials}
-                            onCheckedChange={(checked: boolean) => 
-                              dispatch({ type: 'SET_UI_STATE', payload: { field: 'saveCredentials', value: checked } })
-                            }
-                          />
-                          <span className="text-sm text-foreground">Save credentials</span>
-                        </label>
-                        
-                        {state.saveCredentials && config.environment && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              localStorage.removeItem(`aa-credentials-${config.environment}`)
-                              dispatch({ type: 'SET_CREDENTIALS', payload: { username: "", password: "" } })
-                              dispatch({ type: 'SET_UI_STATE', payload: { field: 'saveCredentials', value: false } })
-                            }}
-                            className="text-destructive hover:text-destructive border-destructive/20 hover:bg-destructive/10">
-                            <Trash2 className="w-4 h-4 mr-1" />
-                            Reset
-                          </Button>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
+              {/* Right Column: Call Parameters */}
+              <div className="flex flex-col">
+                <ParametersTab
+                  config={config}
+                  jsonText={state.jsonText}
+                  jsonError={state.jsonError}
+                  autoGenConfig={state.autoGenConfig}
+                  onParamsChange={handleParamsChange}
+                  onUpdateJsonText={(value) => dispatch({ type: 'UPDATE_JSON_TEXT', payload: value })}
+                  onReset={handleReset}
+                  dispatch={dispatch}
+                />
               </div>
             </div>
 
-            {/* Developer Mode Section */}
-            <div className="mt-6">
+            {/* Advanced Settings Section */}
+            <div>
                 <Card className="border-border shadow-none">
                   <CardHeader className="pb-4">
                     <div className="flex items-center justify-between">
                       <CardTitle className="text-lg flex items-center gap-2">
-                        <Code className="w-5 h-5" />
-                        Developer Settings
+                        <Settings className="w-5 h-5" />
+                        Advanced Settings
                       </CardTitle>
-                      <Switch
-                        checked={config.devMode}
-                        onCheckedChange={(checked) =>
-                          dispatch({ type: 'SET_FIELD', payload: { field: 'devMode', value: checked } })
-                        }
-                      />
                     </div>
                   </CardHeader>
-                  {config.devMode && (
-                    <CardContent className="space-y-4">
-                      <div className="p-3 bg-accent/10 border border-accent/30 rounded-md">
-                        <p className="text-sm text-accent-foreground">
-                          Enable localhost connections for development and testing
-                        </p>
+                  <CardContent className="space-y-4">
+                    {/* Scrollable toggle container */}
+                    <div className="border rounded-lg p-4">
+                      <h4 className="text-sm font-medium mb-3">Configuration Flags</h4>
+                      <div className="max-h-[200px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-border scrollbar-track-transparent">
+                        <div className="grid grid-cols-2 gap-3">
+                          {/* Call Behavior Toggles */}
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <Switch
+                              checked={config.autoStartCall ?? selectedProfile?.defaultBehaviors.autoStartCall ?? false}
+                              onCheckedChange={(checked) => 
+                                dispatch({ type: 'SET_FIELD', payload: { field: 'autoStartCall', value: checked } })
+                              }
+                            />
+                            <span className="text-sm">Auto Start Call</span>
+                          </label>
+                          
+                          <label className="flex items-center gap-2 cursor-pointer">
+                            <Switch
+                              checked={config.skipFlag || false}
+                              onCheckedChange={(checked) => 
+                                dispatch({ type: 'SET_FIELD', payload: { field: 'skipFlag', value: checked } })
+                              }
+                            />
+                            <span className="text-sm">Skip Flag</span>
+                          </label>
+
+                          {/* Auto Generation Toggles - Dynamically rendered from registry */}
+                          {Object.entries(AUTO_GEN_FLAGS).map(([key, flag]) => (
+                            <label key={key} className="flex items-center gap-2 cursor-pointer">
+                              <Switch
+                                checked={state.autoGenConfig[key as keyof typeof state.autoGenConfig] || false}
+                                onCheckedChange={(checked) => 
+                                  dispatch({ type: 'SET_AUTO_GEN_CONFIG', payload: { [key]: checked } })
+                                }
+                              />
+                              <span className="text-sm">{flag.displayName}</span>
+                            </label>
+                          ))}
+                          
+                          {/* Add more toggles here - they will automatically be in the scrollable area */}
+                        </div>
                       </div>
-                      
-                      <div className="space-y-3">
+                    </div>
+
+                    {/* Developer Mode Section */}
+                    <div className="border rounded-lg">
+                      <div className="w-full px-4 py-3 flex items-center justify-between">
+                        <button
+                          className="flex-1 flex items-center gap-2 text-left hover:opacity-80 transition-opacity"
+                          onClick={() => setExpandedSections(prev => ({ ...prev, developerMode: !prev.developerMode }))}
+                        >
+                          {expandedSections.developerMode ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                          <span className="text-sm font-medium">Developer Mode</span>
+                        </button>
+                        <Switch
+                          checked={config.devMode}
+                          onCheckedChange={(checked) => {
+                            dispatch({ type: 'SET_FIELD', payload: { field: 'devMode', value: checked } })
+                            if (checked) {
+                              setExpandedSections(prev => ({ ...prev, developerMode: true }))
+                            }
+                          }}
+                        />
+                      </div>
+                      {expandedSections.developerMode && config.devMode && (
+                        <div className="px-4 pb-3 space-y-3">
                         <label className="flex items-center gap-2 cursor-pointer">
                           <Checkbox
                             checked={state.useIframe}
@@ -654,17 +674,19 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                             <p className="text-xs text-muted-foreground">WebSocket endpoint for direct communication</p>
                           </div>
                         )}
+                        
+                        {config.devMode && !state.useIframe && !state.useWebsocket && (
+                          <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-md mt-3">
+                            <p className="text-sm text-destructive-foreground">
+                              Please select at least one connection method
+                            </p>
+                          </div>
+                        )}
                       </div>
-                      
-                      {config.devMode && !state.useIframe && !state.useWebsocket && (
-                        <div className="p-3 bg-destructive/10 border border-destructive/30 rounded-md">
-                          <p className="text-sm text-destructive-foreground">
-                            Please select at least one connection method
-                          </p>
-                        </div>
-                      )}
-                    </CardContent>
-                  )}
+                    )}
+                    </div>
+
+                  </CardContent>
                 </Card>
               </div>
 

@@ -91,11 +91,6 @@ export function ParametersTab({
       <CardContent>
         {config.parentProfile ? (
           <div className="space-y-4">
-            {/* Profile Template Info */}
-            <div className="p-2 bg-muted border border-border rounded text-sm text-foreground">
-              {config.parentProfile?.charAt(0).toUpperCase() + config.parentProfile?.slice(1)} START_CALL Template
-            </div>
-
             {/* Account Selection Feedback */}
             {config.selectedAccounts && config.selectedAccounts.length > 0 && (
               <div className="p-2 bg-primary/10 border border-primary/30 rounded text-sm text-primary">
@@ -112,7 +107,7 @@ export function ParametersTab({
                 }`}>
                   <CodeMirror
                     value={jsonText || JSON.stringify(config.startCallParams, null, 2)}
-                    height="280px"
+                    height="320px"
                     theme={getCodeMirrorTheme(isDarkMode)}
                     extensions={jsonExtensions}
                     onChange={(value) => {

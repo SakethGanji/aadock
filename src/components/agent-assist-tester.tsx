@@ -121,11 +121,28 @@ export default function AgentAssistTester({ config, profile, onLogout: _onLogout
     currentIndex: 0,
     delay: 2000
   })
-  const [customConversations, setCustomConversations] = useState<Conversation[]>([])
+  const [customConversations, setCustomConversations] = useState<Conversation[]>(() => {
+    // Load custom conversations from localStorage on mount
+    const saved = localStorage.getItem('aa-custom-conversations')
+    if (saved) {
+      try {
+        return JSON.parse(saved)
+      } catch (error) {
+        console.error('Failed to parse saved conversations:', error)
+        return []
+      }
+    }
+    return []
+  })
   const [showUploadDialog, setShowUploadDialog] = useState(false)
 
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [flowManager, setFlowManager] = useState<EventFlowManager | null>(null)
+  
+  // Save custom conversations to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('aa-custom-conversations', JSON.stringify(customConversations))
+  }, [customConversations])
   
   // Get all conversations (built-in + custom)
   const allConversations = useMemo(() => {

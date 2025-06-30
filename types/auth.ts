@@ -10,6 +10,7 @@ export interface LoginConfig {
   selectedAccounts?: AccountTemplate[]
   token?: string
   autoStartCall?: boolean
+  skipFlag?: boolean
 }
 
 export interface ParentProfile {

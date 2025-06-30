@@ -1,12 +1,10 @@
 import type { LoginConfig, AccountTemplate } from "../../../../types/auth"
 import { CALL_TEMPLATES } from "../../../../data/call-templates"
+import { applyAutoGeneration, AUTO_GEN_FLAGS, setNestedValue, getNestedValue } from "./auto-generation-config"
 
-export interface AutoGenerationConfig {
-  autoGenerateUcid: boolean
-  autoGenerateConvertedUcid: boolean
-  autoGenerateTimestamp: boolean
-  customUcidLength: number
-  customPrefix: string
+// AutoGenerationConfig is now dynamic based on AUTO_GEN_FLAGS
+export type AutoGenerationConfig = {
+  [K in keyof typeof AUTO_GEN_FLAGS]: boolean
 }
 
 export interface LoginState {
@@ -45,6 +43,7 @@ export type LoginAction =
   | { type: 'TOGGLE_FIELD_SELECTION'; payload: string }
   | { type: 'SET_ALL_FIELDS'; payload: string[] }
   | { type: 'SET_AUTO_GEN_CONFIG'; payload: Partial<AutoGenerationConfig> }
+  | { type: 'INIT_AUTO_GEN_CONFIG'; payload: AutoGenerationConfig }
   | { type: 'APPLY_AUTO_GENERATION'; payload?: void }
 
 export const initialState: LoginState = {
@@ -75,13 +74,11 @@ export const initialState: LoginState = {
   useWebsocket: false,
   saveCredentials: false,
   saveDefaultAccount: false,
-  autoGenConfig: {
-    autoGenerateUcid: true,
-    autoGenerateConvertedUcid: true,
-    autoGenerateTimestamp: false,
-    customUcidLength: 10,
-    customPrefix: ''
-  }
+  autoGenConfig: Object.keys(AUTO_GEN_FLAGS).reduce((acc, key) => {
+    // Default values for each flag
+    acc[key as keyof AutoGenerationConfig] = key === 'autoGenerateUcid' // UCID on by default
+    return acc
+  }, {} as AutoGenerationConfig)
 }
 
 export function loginReducer(state: LoginState, action: LoginAction): LoginState {
@@ -107,47 +104,45 @@ export function loginReducer(state: LoginState, action: LoginAction): LoginState
     
     case 'SET_PARENT_PROFILE': {
       const newProfile = action.payload
-      const template = CALL_TEMPLATES.find((t: any) => t.id === `start_call_${newProfile}`)
       
-      if (template) {
-        let newParams = { ...template.params }
-
-        // Apply auto-generation settings
-        if (state.autoGenConfig.autoGenerateUcid) {
-          const timestamp = Date.now().toString()
-          const paddingLength = Math.max(0, state.autoGenConfig.customUcidLength - timestamp.length)
-          const ucid = timestamp + '0'.repeat(paddingLength)
-          
-          newParams = {
-            ...newParams,
-            callDetailsAO: {
-              ...newParams.callDetailsAO,
-              Ucid: ucid
-            }
+      // Save the last selected profile
+      localStorage.setItem('aa-last-parent-profile', newProfile)
+      
+      // Check for saved parameters in localStorage
+      const savedParams = localStorage.getItem(`aa-start-call-params-${newProfile}`)
+      let newParams
+      
+      if (savedParams) {
+        try {
+          const parsed = JSON.parse(savedParams)
+          // Validate that saved params have required fields
+          if (parsed && parsed.eventName === 'START_CALL') {
+            newParams = parsed
+          } else {
+            // Invalid saved params, use template
+            const template = CALL_TEMPLATES.find((t: any) => t.id === `start_call_${newProfile}`)
+            newParams = template ? { ...template.params } : {}
           }
+        } catch (error) {
+          console.error("Failed to parse saved start call params", error)
+          // Fall back to template if parsing fails
+          const template = CALL_TEMPLATES.find((t: any) => t.id === `start_call_${newProfile}`)
+          newParams = template ? { ...template.params } : {}
         }
-
-        if (state.autoGenConfig.autoGenerateConvertedUcid) {
-          const prefix = state.autoGenConfig.customPrefix || newProfile.toUpperCase()
-          newParams = {
-            ...newParams,
-            callDetailsAO: {
-              ...newParams.callDetailsAO,
-              convertedUcid: `${prefix}${Date.now()}`
-            }
-          }
+      } else {
+        // Use default template if no saved params
+        const template = CALL_TEMPLATES.find((t: any) => t.id === `start_call_${newProfile}`)
+        newParams = template ? { ...template.params } : {}
+      }
+      
+      if (Object.keys(newParams).length > 0) {
+        // Apply auto-generation using the generic system
+        const context = {
+          parentProfile: newProfile,
+          environment: state.config.environment,
+          timestamp: Date.now()
         }
-
-        if (state.autoGenConfig.autoGenerateTimestamp) {
-          const timestamp = new Date().toISOString()
-          newParams = {
-            ...newParams,
-            callDetailsAO: {
-              ...newParams.callDetailsAO,
-              timestamp: timestamp
-            }
-          }
-        }
+        newParams = applyAutoGeneration(newParams, state.autoGenConfig, context)
         
         return {
           ...state,
@@ -199,16 +194,50 @@ export function loginReducer(state: LoginState, action: LoginAction): LoginState
       }
     }
     
-    case 'UPDATE_PARAMS':
+    case 'UPDATE_PARAMS': {
+      let updatedParams = { ...action.payload }
+      
+      // Apply auto-generation for any active flags
+      const context = {
+        parentProfile: state.config.parentProfile,
+        environment: state.config.environment,
+        timestamp: Date.now()
+      }
+      
+      // Check each active flag to see if it should regenerate
+      Object.entries(state.autoGenConfig).forEach(([flagKey, isEnabled]) => {
+        if (isEnabled) {
+          const flag = AUTO_GEN_FLAGS[flagKey]
+          if (flag) {
+            const currentValue = getNestedValue(updatedParams, flag.paramPath)
+            const shouldRegen = flag.shouldRegenerate?.(currentValue, context) ?? !currentValue
+            
+            if (shouldRegen) {
+              const newValue = flag.generateValue(context)
+              updatedParams = setNestedValue(updatedParams, flag.paramPath, newValue)
+            }
+          }
+        }
+      })
+      
+      // Save to localStorage if we have parentProfile
+      if (state.config.parentProfile) {
+        localStorage.setItem(
+          `aa-start-call-params-${state.config.parentProfile}`,
+          JSON.stringify(updatedParams)
+        )
+      }
+      
       return {
         ...state,
         config: {
           ...state.config,
-          startCallParams: action.payload,
+          startCallParams: updatedParams,
         },
-        jsonText: JSON.stringify(action.payload, null, 2),
+        jsonText: JSON.stringify(updatedParams, null, 2),
         jsonError: null,
       }
+    }
     
     case 'UPDATE_JSON_TEXT':
       return {
@@ -219,12 +248,16 @@ export function loginReducer(state: LoginState, action: LoginAction): LoginState
     case 'ADD_CUSTOM_ACCOUNT': {
       const { key, account } = action.payload
       const currentAccounts = state.customAccounts[key] || []
+      const updatedAccounts = [...currentAccounts, account]
+      
+      // Save to localStorage
+      localStorage.setItem(`aa-custom-accounts-${key}`, JSON.stringify(updatedAccounts))
       
       return {
         ...state,
         customAccounts: {
           ...state.customAccounts,
-          [key]: [...currentAccounts, account],
+          [key]: updatedAccounts,
         },
         showAddAccount: false,
       }
@@ -234,6 +267,9 @@ export function loginReducer(state: LoginState, action: LoginAction): LoginState
       const { key, index } = action.payload
       const accounts = state.customAccounts[key] || []
       const newAccounts = accounts.filter((_, i) => i !== index)
+      
+      // Save to localStorage
+      localStorage.setItem(`aa-custom-accounts-${key}`, JSON.stringify(newAccounts))
       
       return {
         ...state,
@@ -249,6 +285,9 @@ export function loginReducer(state: LoginState, action: LoginAction): LoginState
       const hiddenSet = new Set(state.hiddenDefaultAccounts[key] || [])
       hiddenSet.add(index)
       
+      // Save to localStorage
+      localStorage.setItem(`aa-hidden-accounts-${key}`, JSON.stringify(Array.from(hiddenSet)))
+      
       return {
         ...state,
         hiddenDefaultAccounts: {
@@ -262,6 +301,10 @@ export function loginReducer(state: LoginState, action: LoginAction): LoginState
       const { key } = action.payload
       const hiddenSet = new Set(state.hiddenDefaultAccounts[key] || [])
       hiddenSet.clear()
+      
+      // Clear from localStorage
+      localStorage.removeItem(`aa-custom-accounts-${key}`)
+      localStorage.removeItem(`aa-hidden-accounts-${key}`)
       
       return {
         ...state,
@@ -306,75 +349,99 @@ export function loginReducer(state: LoginState, action: LoginAction): LoginState
     case 'INIT_SAVED_STATE':
       return {
         ...state,
-        ...action.payload,
+        customAccounts: {
+          ...state.customAccounts,
+          ...action.payload.customAccounts
+        },
+        hiddenDefaultAccounts: {
+          ...state.hiddenDefaultAccounts,
+          ...action.payload.hiddenDefaultAccounts
+        }
       }
 
-    case 'SET_AUTO_GEN_CONFIG':
+    case 'SET_AUTO_GEN_CONFIG': {
+      const newAutoGenConfig = {
+        ...state.autoGenConfig,
+        ...action.payload,
+      }
+      
+      // Save to localStorage
+      localStorage.setItem('aa-auto-gen-config', JSON.stringify(newAutoGenConfig))
+      
+      // Check if any flag was just enabled
+      const enabledFlags = Object.entries(action.payload)
+        .filter(([key, value]) => value === true)
+        .map(([key]) => key)
+      
+      if (enabledFlags.length > 0 && state.config.startCallParams) {
+        // Apply auto-generation for newly enabled flags
+        const context = {
+          parentProfile: state.config.parentProfile,
+          environment: state.config.environment,
+          timestamp: Date.now()
+        }
+        
+        let updatedParams = { ...state.config.startCallParams }
+        
+        // Only apply the specific flags that were just enabled
+        enabledFlags.forEach(flagKey => {
+          const flag = AUTO_GEN_FLAGS[flagKey]
+          if (flag) {
+            const newValue = flag.generateValue(context)
+            updatedParams = setNestedValue(updatedParams, flag.paramPath, newValue)
+          }
+        })
+        
+        // Save updated params to localStorage if we have parentProfile
+        if (state.config.parentProfile) {
+          localStorage.setItem(
+            `aa-start-call-params-${state.config.parentProfile}`,
+            JSON.stringify(updatedParams)
+          )
+        }
+        
+        return {
+          ...state,
+          autoGenConfig: newAutoGenConfig,
+          config: {
+            ...state.config,
+            startCallParams: updatedParams
+          },
+          jsonText: JSON.stringify(updatedParams, null, 2),
+          jsonError: null
+        }
+      }
+      
       return {
         ...state,
-        autoGenConfig: {
-          ...state.autoGenConfig,
-          ...action.payload,
-        },
+        autoGenConfig: newAutoGenConfig,
+      }
+    }
+
+    case 'INIT_AUTO_GEN_CONFIG':
+      // Initialize auto-gen config from localStorage without triggering generation
+      return {
+        ...state,
+        autoGenConfig: action.payload
       }
 
     case 'APPLY_AUTO_GENERATION': {
-      if (!state.config.startCallParams || !state.config.parentProfile) {
+      if (!state.config.startCallParams) {
         return state
       }
 
-      let updatedParams = { ...state.config.startCallParams }
-
-      // Helper functions for generation
-      const generateUcid = () => {
-        if (state.autoGenConfig.customUcidLength > 0) {
-          const timestamp = Date.now().toString()
-          const paddingLength = Math.max(0, state.autoGenConfig.customUcidLength - timestamp.length)
-          return timestamp + '0'.repeat(paddingLength)
-        }
-        return `${Date.now()}00000000000`
+      // Apply all auto-generation flags
+      const context = {
+        parentProfile: state.config.parentProfile,
+        environment: state.config.environment,
+        timestamp: Date.now()
       }
-
-      const generateConvertedUcid = () => {
-        const prefix = state.autoGenConfig.customPrefix || state.config.parentProfile.toUpperCase()
-        return `${prefix}${Date.now()}`
-      }
-
-      // Auto-generate UCID if enabled
-      if (state.autoGenConfig.autoGenerateUcid && updatedParams.callDetailsAO) {
-        updatedParams = {
-          ...updatedParams,
-          callDetailsAO: {
-            ...updatedParams.callDetailsAO,
-            Ucid: generateUcid()
-          }
-        }
-      }
-
-      // Auto-generate convertedUcid if enabled
-      if (state.autoGenConfig.autoGenerateConvertedUcid && updatedParams.callDetailsAO) {
-        updatedParams = {
-          ...updatedParams,
-          callDetailsAO: {
-            ...updatedParams.callDetailsAO,
-            convertedUcid: generateConvertedUcid()
-          }
-        }
-      }
-
-      // Update timestamp fields if enabled
-      if (state.autoGenConfig.autoGenerateTimestamp) {
-        const timestamp = new Date().toISOString()
-        if (updatedParams.callDetailsAO) {
-          updatedParams = {
-            ...updatedParams,
-            callDetailsAO: {
-              ...updatedParams.callDetailsAO,
-              timestamp: timestamp
-            }
-          }
-        }
-      }
+      
+      const updatedParams = applyAutoGeneration(
+        state.config.startCallParams,
+        state.autoGenConfig,
+        context
+      )
 
       return {
         ...state,

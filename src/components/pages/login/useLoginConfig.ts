@@ -6,10 +6,34 @@ export function useLoginConfig() {
   const [state, dispatch] = useReducer(loginReducer, initialState)
   const { environment, parentProfile } = state.config
 
+  // Initialize saved parameters on first load
+  useEffect(() => {
+    // Load saved parent profile if exists
+    const savedProfile = localStorage.getItem('aa-last-parent-profile')
+    if (savedProfile && !parentProfile) {
+      dispatch({ type: 'SET_PARENT_PROFILE', payload: savedProfile })
+    }
+    
+    // Load saved auto-generation config
+    const savedAutoGenConfig = localStorage.getItem('aa-auto-gen-config')
+    if (savedAutoGenConfig) {
+      try {
+        const autoGenConfig = JSON.parse(savedAutoGenConfig)
+        // Load all config at once without triggering generation
+        dispatch({ 
+          type: 'INIT_AUTO_GEN_CONFIG', 
+          payload: autoGenConfig
+        })
+      } catch (error) {
+        console.error("Failed to parse saved auto-gen config", error)
+      }
+    }
+  }, [])
+
   // Effect to load credentials from localStorage
   useEffect(() => {
-    if (environment) {
-      const savedData = localStorage.getItem(`aa-credentials-${environment}`)
+    if (environment && parentProfile) {
+      const savedData = localStorage.getItem(`aa-credentials-${parentProfile}-${environment}`)
       if (savedData) {
         try {
           const parsed = JSON.parse(savedData)
@@ -19,12 +43,12 @@ export function useLoginConfig() {
           console.error("Failed to parse saved credentials", error)
         }
       } else {
-        // Clear credentials when switching to an environment with no saved data
+        // Clear credentials when switching to a profile/environment with no saved data
         dispatch({ type: 'SET_CREDENTIALS', payload: { username: '', password: '' } })
         dispatch({ type: 'SET_UI_STATE', payload: { field: 'saveCredentials', value: false } })
       }
     }
-  }, [environment])
+  }, [environment, parentProfile])
 
   // Effect to load default account
   useEffect(() => {
@@ -48,17 +72,40 @@ export function useLoginConfig() {
   useEffect(() => {
     if (parentProfile && environment) {
       const key = `${parentProfile}_${environment}`
-      if (!state.customAccounts[key]) {
-        dispatch({ 
-          type: 'INIT_SAVED_STATE', 
-          payload: { 
-            customAccounts: { ...state.customAccounts, [key]: [] },
-            hiddenDefaultAccounts: { ...state.hiddenDefaultAccounts, [key]: new Set() }
-          } 
-        })
+      
+      // Load custom accounts from localStorage
+      const savedCustomAccounts = localStorage.getItem(`aa-custom-accounts-${key}`)
+      let customAccountsForKey: AccountTemplate[] = []
+      if (savedCustomAccounts) {
+        try {
+          customAccountsForKey = JSON.parse(savedCustomAccounts)
+        } catch (error) {
+          console.error("Failed to parse saved custom accounts", error)
+        }
       }
+      
+      // Load hidden accounts from localStorage
+      const savedHiddenAccounts = localStorage.getItem(`aa-hidden-accounts-${key}`)
+      let hiddenAccountsForKey = new Set<number>()
+      if (savedHiddenAccounts) {
+        try {
+          const hiddenArray = JSON.parse(savedHiddenAccounts)
+          hiddenAccountsForKey = new Set(hiddenArray)
+        } catch (error) {
+          console.error("Failed to parse saved hidden accounts", error)
+        }
+      }
+      
+      // Always load from localStorage for the current key
+      dispatch({ 
+        type: 'INIT_SAVED_STATE', 
+        payload: { 
+          customAccounts: { ...state.customAccounts, [key]: customAccountsForKey },
+          hiddenDefaultAccounts: { ...state.hiddenDefaultAccounts, [key]: hiddenAccountsForKey }
+        } 
+      })
     }
-  }, [parentProfile, environment, state.customAccounts, state.hiddenDefaultAccounts])
+  }, [parentProfile, environment])
 
   return [state, dispatch] as const
 }
